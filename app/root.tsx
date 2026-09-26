@@ -1,3 +1,5 @@
+import { QueryClientProvider } from "@tanstack/react-query"
+import { useState } from "react"
 import {
   Links,
   Meta,
@@ -8,11 +10,12 @@ import {
 } from "react-router"
 
 import type { Route } from "./+types/root"
+import { createQueryClient } from "~/lib/api/query-client"
 import "./app.css"
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="ko">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,7 +32,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />
+  // 요청(SSR)·사용자마다 캐시가 섞이지 않도록 컴포넌트 안에서 한 번만 생성한다.
+  const [queryClient] = useState(createQueryClient)
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
+  )
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
