@@ -1,5 +1,12 @@
 import { Link } from "react-router"
-import { LayoutDashboard, Package, Warehouse, Boxes, Store, Box } from "lucide-react"
+import {
+  LayoutDashboard,
+  Package,
+  Warehouse,
+  Boxes,
+  Store,
+  Box,
+} from "lucide-react"
 
 import {
   Sidebar,
@@ -20,9 +27,9 @@ import {
  */
 const navItems = [
   { label: "개요", icon: LayoutDashboard, href: "/", enabled: true },
-  { label: "상품", icon: Package, href: "#", enabled: false },
-  { label: "창고", icon: Warehouse, href: "#", enabled: false },
-  { label: "재고", icon: Boxes, href: "#", enabled: false },
+  { label: "상품", icon: Package, href: "/products", enabled: true },
+  { label: "창고", icon: Warehouse, href: "/warehouses", enabled: true },
+  { label: "재고", icon: Boxes, href: "/inventory", enabled: true },
   { label: "지점", icon: Store, href: "#", enabled: false },
 ]
 
@@ -48,7 +55,6 @@ export function AppSidebar() {
                 item.enabled ? (
                   <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton
-                      isActive
                       tooltip={item.label}
                       render={
                         <Link to={item.href}>
@@ -60,7 +66,10 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 ) : (
                   <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton disabled tooltip={`${item.label} (준비 중)`}>
+                    <SidebarMenuButton
+                      disabled
+                      tooltip={`${item.label} (준비 중)`}
+                    >
                       <item.icon />
                       <span>{item.label}</span>
                     </SidebarMenuButton>
