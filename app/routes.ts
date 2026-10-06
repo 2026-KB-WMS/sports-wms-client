@@ -16,4 +16,7 @@ export default [
   route("inbounds/:inboundId", "routes/inbound-detail.tsx"),
   route("store-orders", "routes/store-orders.tsx"),
   route("store-orders/:storeOrderId", "routes/store-order-detail.tsx"),
+  route("allocations", "routes/allocations.tsx"),
+  route("outbounds", "routes/outbounds.tsx"),
+  route("outbounds/:outboundId", "routes/outbound-detail.tsx"),
 ] satisfies RouteConfig

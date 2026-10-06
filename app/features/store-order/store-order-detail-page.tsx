@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router"
 
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { ReasonDialog } from "~/components/common/reason-dialog"
@@ -16,6 +17,8 @@ import {
 import { formatDateTime, formatWon } from "~/features/purchase-order/format"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { StoreOrder } from "~/lib/api/store-order"
+import { OutboundCreateDialog } from "~/features/outbound/outbound-create-dialog"
+import { useAllocateStoreOrder } from "~/features/outbound/hooks"
 import { useCurrentUser } from "~/lib/current-user"
 
 import {
@@ -39,6 +42,8 @@ export function StoreOrderDetailPage({
   const detailsQuery = useStoreOrderDetails(storeOrderId)
   const order = orderQuery.data
   const details = detailsQuery.data
+  // 출고·재고 할당 화면은 점주가 볼 수 없다.
+  const canViewFulfillment = useCurrentUser().role !== "STORE_OWNER"
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -59,8 +64,17 @@ export function StoreOrderDetailPage({
       )}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>발주 항목</CardTitle>
+          {canViewFulfillment && (
+            <Button
+              variant="ghost"
+              size="sm"
+              render={<Link to={`/allocations?storeOrderId=${storeOrderId}`} />}
+            >
+              재고 할당 보기
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {detailsQuery.isLoading && (
@@ -132,6 +146,7 @@ export function StoreOrderDetailPage({
                   <TableHead>상태</TableHead>
                   <TableHead>출고일시</TableHead>
                   <TableHead>배송 완료</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -148,6 +163,19 @@ export function StoreOrderDetailPage({
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(outbound.deliveredAt)}
+                    </TableCell>
+                    <TableCell>
+                      {canViewFulfillment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          render={
+                            <Link to={`/outbounds/${outbound.outboundId}`} />
+                          }
+                        >
+                          상세
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -208,7 +236,15 @@ export function StoreOrderDetailPage({
 }
 
 type Action =
-  "approve" | "reject" | "assign" | "cancel" | "hold" | "resume" | "partial"
+  | "approve"
+  | "reject"
+  | "assign"
+  | "cancel"
+  | "hold"
+  | "resume"
+  | "partial"
+  | "allocate"
+  | "outbound"
 
 function OrderHeaderCard({ order }: { order: StoreOrder }) {
   const { userId, role } = useCurrentUser()
@@ -219,6 +255,7 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
   const hold = useHoldStoreOrder()
   const resume = useResumeStoreOrder()
   const partial = useCompletePartialStoreOrder()
+  const allocate = useAllocateStoreOrder()
 
   const isAdmin = role === "HQ_ADMIN"
   const isManager = role === "WAREHOUSE_MANAGER"
@@ -237,6 +274,8 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
   const canHold = isManager && order.status === "ASSIGNED"
   const canResume = isManager && order.status === "ON_HOLD"
   const canPartial = isManager && order.status === "ASSIGNED"
+  // 재고 할당·출고 생성은 배정된(ASSIGNED) 발주에서만 가능하다. 보류 중에는 막힌다.
+  const canFulfill = isManager && order.status === "ASSIGNED"
 
   function open(next: Action, reset: () => void) {
     reset()
@@ -272,6 +311,23 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
             >
               {order.status === "APPROVED" ? "창고 배정" : "창고 변경"}
             </Button>
+          )}
+          {canFulfill && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => open("allocate", allocate.reset)}
+              >
+                재고 할당
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAction("outbound")}
+              >
+                출고 생성
+              </Button>
+            </>
           )}
           {canHold && (
             <Button
@@ -353,6 +409,29 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
           </p>
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={action === "allocate"}
+        onOpenChange={close}
+        title="재고 할당"
+        description="발주의 남은 수량 전체를 유통기한이 빠른 재고부터(FEFO) 예약합니다. 한 항목이라도 재고가 부족하면 아무것도 할당되지 않습니다."
+        confirmLabel="할당"
+        isPending={allocate.isPending}
+        error={
+          allocate.isError
+            ? getErrorMessage(allocate.error, "할당에 실패했습니다.")
+            : null
+        }
+        onConfirm={() =>
+          allocate.mutate(id, { onSuccess: () => setAction(null) })
+        }
+      />
+
+      <OutboundCreateDialog
+        open={action === "outbound"}
+        onOpenChange={close}
+        storeOrderId={id}
+      />
 
       <ConfirmDialog
         open={action === "approve"}
