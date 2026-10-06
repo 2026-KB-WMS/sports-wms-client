@@ -9,6 +9,8 @@ import {
   ClipboardList,
   PackageCheck,
   ShoppingCart,
+  Layers,
+  PackageOpen,
   Box,
 } from "lucide-react"
 
@@ -103,6 +105,20 @@ const navItems: {
     href: "/store-orders",
     enabled: true,
     roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"],
+  },
+  {
+    label: "재고 할당",
+    icon: Layers,
+    href: "/allocations",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+  },
+  {
+    label: "출고",
+    icon: PackageOpen,
+    href: "/outbounds",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
   },
 ]
 
