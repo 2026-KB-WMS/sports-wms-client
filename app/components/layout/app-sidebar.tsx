@@ -8,6 +8,7 @@ import {
   Truck,
   ClipboardList,
   PackageCheck,
+  ShoppingCart,
   Box,
 } from "lucide-react"
 
@@ -95,6 +96,13 @@ const navItems: {
     href: "/inbounds",
     enabled: true,
     roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+  },
+  {
+    label: "지점 발주",
+    icon: ShoppingCart,
+    href: "/store-orders",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"],
   },
 ]
 

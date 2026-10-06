@@ -6,10 +6,14 @@ import * as storeApi from "~/lib/api/store"
  * 지점 도메인 TanStack Query 훅. 쿼리 키는 ["store", 리소스, 조건] 형태로 통일한다.
  */
 
-export function useStores(params?: Parameters<typeof storeApi.getStores>[0]) {
+export function useStores(
+  params?: Parameters<typeof storeApi.getStores>[0],
+  enabled = true
+) {
   return useQuery({
     queryKey: ["store", "stores", params],
     queryFn: () => storeApi.getStores(params),
+    enabled,
   })
 }
 
