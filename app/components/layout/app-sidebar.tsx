@@ -5,6 +5,7 @@ import {
   Warehouse,
   Boxes,
   Store,
+  Truck,
   Box,
 } from "lucide-react"
 
@@ -59,6 +60,13 @@ const navItems: {
     href: "/stores",
     enabled: true,
     roles: ["HQ_ADMIN", "STORE_OWNER"],
+  },
+  {
+    label: "공급처",
+    icon: Truck,
+    href: "/suppliers",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
   },
 ]
 
