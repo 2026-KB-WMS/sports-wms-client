@@ -56,8 +56,8 @@ const navItems: {
   {
     label: "지점",
     icon: Store,
-    href: "#",
-    enabled: false,
+    href: "/stores",
+    enabled: true,
     roles: ["HQ_ADMIN", "STORE_OWNER"],
   },
 ]
