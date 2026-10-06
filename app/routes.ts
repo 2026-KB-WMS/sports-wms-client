@@ -10,4 +10,6 @@ export default [
   route("stores/:storeId", "routes/store-detail.tsx"),
   route("suppliers", "routes/suppliers.tsx"),
   route("suppliers/:supplierId", "routes/supplier-detail.tsx"),
+  route("purchase-orders", "routes/purchase-orders.tsx"),
+  route("purchase-orders/:purchaseOrderId", "routes/purchase-order-detail.tsx"),
 ] satisfies RouteConfig
