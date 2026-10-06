@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { ApiError } from "~/lib/api/client"
+import { getErrorMessage } from "~/lib/api/error-messages"
 import type { Warehouse } from "~/lib/api/warehouse"
 
 import { useCreateWarehouse, useWarehouses } from "./hooks"
@@ -82,9 +82,7 @@ export function WarehousePage() {
           )}
           {warehousesQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {warehousesQuery.error instanceof ApiError
-                ? warehousesQuery.error.message
-                : "목록을 불러오지 못했습니다."}
+              {getErrorMessage(warehousesQuery.error, "목록을 불러오지 못했습니다.")}
             </p>
           )}
           {!warehousesQuery.isLoading && !warehousesQuery.isError && (
@@ -262,9 +260,7 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
         </div>
         {createWarehouse.isError && (
           <p className="text-sm text-destructive sm:col-span-2">
-            {createWarehouse.error instanceof ApiError
-              ? createWarehouse.error.message
-              : "등록에 실패했습니다."}
+            {getErrorMessage(createWarehouse.error, "등록에 실패했습니다.")}
           </p>
         )}
         <div className="sm:col-span-2">

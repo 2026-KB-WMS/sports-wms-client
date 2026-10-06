@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { ApiError } from "~/lib/api/client"
+import { getErrorMessage } from "~/lib/api/error-messages"
+import { getRoleLabel, useCurrentUser } from "~/lib/current-user"
 import type {
   InventoryLotView,
   InventorySkuSummary,
@@ -126,9 +127,7 @@ function queryState({
   if (isError) {
     return (
       <p className="py-8 text-center text-sm text-destructive">
-        {error instanceof ApiError
-          ? error.message
-          : "목록을 불러오지 못했습니다."}
+        {getErrorMessage(error, "목록을 불러오지 못했습니다.")}
       </p>
     )
   }
@@ -367,8 +366,8 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
 }
 
 /**
- * 재고 조정 폼. 인증이 아직 없어 처리자 userId는 임시로 직접 입력받는다
- * (백엔드 창고 도메인 GET /warehouses/my와 동일하게 임시로 클라이언트가 값을 넘기는 방식).
+ * 재고 조정 폼. 인증이 아직 없어 처리자 userId는 현재 사용자 모듈(useCurrentUser)의 값을 쓴다.
+ * 재고 조정은 창고 관리자 권한이다(서버의 역할 검사는 인증 연동 후 적용).
  */
 function InventoryAdjustForm({
   target,
@@ -382,10 +381,9 @@ function InventoryAdjustForm({
     String(target.onHandQuantity)
   )
   const [reason, setReason] = useState("")
-  const [userId, setUserId] = useState("1")
+  const { userId, role } = useCurrentUser()
 
-  const canSubmit =
-    afterQuantity !== "" && reason.trim() !== "" && userId !== ""
+  const canSubmit = afterQuantity !== "" && reason.trim() !== ""
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -397,7 +395,7 @@ function InventoryAdjustForm({
           afterQuantity: Number(afterQuantity),
           reason,
         },
-        userId: Number(userId),
+        userId,
       },
       { onSuccess: onClose }
     )
@@ -433,13 +431,15 @@ function InventoryAdjustForm({
           />
         </div>
         <div>
-          <Label htmlFor="adjust-user">처리자 ID</Label>
-          <Input
-            id="adjust-user"
-            type="number"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-          />
+          <Label>처리자</Label>
+          <p className="py-2 text-sm">
+            {getRoleLabel(role)} #{userId}
+          </p>
+          {role !== "WAREHOUSE_MANAGER" && (
+            <p className="text-xs text-muted-foreground">
+              재고 조정은 창고 관리자 권한입니다.
+            </p>
+          )}
         </div>
         <div className="sm:col-span-3">
           <Label htmlFor="adjust-reason">조정 사유</Label>
@@ -451,9 +451,7 @@ function InventoryAdjustForm({
         </div>
         {adjustInventory.isError && (
           <p className="text-sm text-destructive sm:col-span-3">
-            {adjustInventory.error instanceof ApiError
-              ? adjustInventory.error.message
-              : "조정에 실패했습니다."}
+            {getErrorMessage(adjustInventory.error, "조정에 실패했습니다.")}
           </p>
         )}
         <div className="sm:col-span-3">

@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { ApiError } from "~/lib/api/client"
+import { getErrorMessage } from "~/lib/api/error-messages"
 import type { WarehouseSection } from "~/lib/api/warehouse"
 
 import {
@@ -96,9 +96,7 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
           )}
           {sectionsQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {sectionsQuery.error instanceof ApiError
-                ? sectionsQuery.error.message
-                : "목록을 불러오지 못했습니다."}
+              {getErrorMessage(sectionsQuery.error, "목록을 불러오지 못했습니다.")}
             </p>
           )}
           {!sectionsQuery.isLoading && !sectionsQuery.isError && (
@@ -273,9 +271,7 @@ function SectionCreateForm({
         </div>
         {createSection.isError && (
           <p className="text-sm text-destructive sm:col-span-2">
-            {createSection.error instanceof ApiError
-              ? createSection.error.message
-              : "등록에 실패했습니다."}
+            {getErrorMessage(createSection.error, "등록에 실패했습니다.")}
           </p>
         )}
         <div className="sm:col-span-2">

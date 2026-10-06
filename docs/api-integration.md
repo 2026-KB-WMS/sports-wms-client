@@ -17,7 +17,7 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 | 서버 현황 | 프론트 처리 |
 |---|---|
 | 인증(JWT)·회원 도메인 미구현. `SecurityConfig`가 전체 허용 | `Authorization` 헤더 없이 호출. 헤더 추가 위치는 `client.ts`의 `buildHeaders` |
-| 처리 사용자를 쿼리 파라미터 `userId`로 받음 (재고 조정, 입고 검수·완료, 지점 발주·출고 상태 전이, `/warehouses/my`, `/stores/my`) | 호출부에서 직접 넘긴다. **현재 사용자 모듈(`useCurrentUser`)을 만들어 한 곳에서 공급하는 것으로 정리 예정**(JWT 도입 시 이 모듈만 교체) |
+| 처리 사용자를 쿼리 파라미터 `userId`로 받음 (재고 조정, 입고 검수·완료, 지점 발주·출고 상태 전이, `/warehouses/my`, `/stores/my`) | 호출부에서 직접 넘긴다. `app/lib/current-user.tsx`의 `useCurrentUser()`로 한 곳에서 공급한다(개발용 전환기는 사이드바 하단, JWT 도입 시 이 모듈만 교체). 소속 창고·지점 조회(`/warehouses/my`, `/stores/my`)는 각 도메인 이슈에서 붙인다 |
 | 역할별 403이 동작하지 않음 | 화면에서 역할로 메뉴·버튼을 숨기되, 서버 403 처리도 구현해 둔다 |
 | 페이지네이션 보류. 목록은 `data.items` 전체를 고정 정렬로 반환 | 필터는 서버 쿼리 파라미터로, 정렬·페이징은 클라이언트에서 처리. 도입 시 `ListData`에 `pageInfo`를 추가하고 훅만 바꾼다 |
 | 날짜·시각에 오프셋 없음, KST 기준 (`2026-10-05T14:30:00`) | 시간대 변환 없이 그대로 표시·전송한다 |
@@ -35,16 +35,19 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 
 ## 4. 에러 코드 안내문구
 
-도메인별 409 코드는 서버 문서에 있다. 사용자에게 서버 메시지만으로 부족한 코드는 아래에 안내문구를 정해 두고, 구현 시 `lib/api`의 매핑 테이블로 옮긴다.
+서버는 `errorCode`마다 한국어 기본 메시지를 내려준다(wms-server `ErrorCode` + 도메인별 `*ErrorCode` enum). 그래서 화면은 **서버 `message`를 그대로 보여주는 것이 기본**이고, 서버 메시지만으로 부족한 코드만 `app/lib/api/error-messages.ts`의 `ERROR_GUIDES`에 안내문구를 둔다. 화면에서는 `getErrorMessage(error, 기본문구)`로 꺼낸다.
 
-| errorCode | 발생 위치 | 화면 처리 |
+| errorCode | 이유 | 화면 처리 |
 |---|---|---|
-| `STALE_QUANTITY` | 재고 조정 | 현재 수량을 다시 조회해 보여주고 재입력을 유도 |
-| `SECTION_CAPACITY_EXCEEDED` | 입고 완료, 재고 증량 조정 | 구역 수용량 초과 안내, 다른 구역 선택 유도 |
-| `INSUFFICIENT_STOCK` | 재고 할당 | 메시지의 SKU별 요청·가용 수량을 그대로 노출 |
-| `ORDER_IN_PICKING` | 발주 취소·보류 | 피킹이 시작되어 불가함을 안내 |
+| `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `INTERNAL_ERROR` | 공통 코드의 기본 메시지는 행동을 안내하지 않음 | 클라이언트 문구 |
+| `SECTION_CAPACITY_EXCEEDED` | 입고 완료·재고 증량 시 발생. 서버 메시지에 다음 행동이 없음 | 다른 구역 선택 유도 |
+| `STALE_QUANTITY` | 서버 메시지로 충분 | 메시지 표시 + 화면에서 현재 수량을 다시 조회 |
+| `INSUFFICIENT_STOCK` | 서버 메시지에 SKU별 요청·가용 수량이 담김 | 메시지 그대로 노출 |
+| `ORDER_IN_PICKING` | 서버 메시지로 충분 | 메시지 표시 |
 
-(필요한 코드가 생기면 행을 추가한다.)
+코드가 필요 이상으로 늘지 않게, 서버 메시지로 충분하면 매핑하지 않는다.
+
+공통 컴포넌트: `ReasonDialog`(사유 입력, ≤500자), `ConfirmDialog`(확인), `StatusBadge`(상태·진행 단계 배지) — `app/components/common/`.
 
 ## 5. 연동 현황
 
@@ -59,6 +62,7 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 | 입고 (`/inbounds`) | 구현 | 미착수 | 검수는 항목 전체 교체 방식 |
 | 지점 발주 (`/orders`) | 11개 구현 | 미착수 | `GET /orders/my` 보류 |
 | 출고·재고 할당 | 구현 | 미착수 | |
+| 공통 기반 (현재 사용자, 에러 매핑, 공통 컴포넌트, 역할별 사이드바) | - | 완료 | |
 | 인증 | 미구현 | - | 서버 선행 필요 |
 
 연동 순서: 지점 + 공급처 → 창고 발주·입고 → 지점 발주 → 출고·할당.
