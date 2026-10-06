@@ -35,18 +35,19 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 
 ## 4. 에러 코드 안내문구
 
-도메인별 409 코드는 서버 문서에 있다. 안내문구 매핑은 `app/lib/api/error-messages.ts`의 `ERROR_GUIDES`에 있고, 화면에서는 `getErrorMessage(error, 기본문구)`로 꺼낸다(모르는 코드는 서버 메시지를 그대로 보여준다). 코드를 추가할 때는 이 표와 매핑 테이블을 함께 갱신한다.
+서버는 `errorCode`마다 한국어 기본 메시지를 내려준다(wms-server `ErrorCode` + 도메인별 `*ErrorCode` enum). 그래서 화면은 **서버 `message`를 그대로 보여주는 것이 기본**이고, 서버 메시지만으로 부족한 코드만 `app/lib/api/error-messages.ts`의 `ERROR_GUIDES`에 안내문구를 둔다. 화면에서는 `getErrorMessage(error, 기본문구)`로 꺼낸다.
 
-| errorCode | 발생 위치 | 화면 처리 |
+| errorCode | 이유 | 화면 처리 |
 |---|---|---|
-| `STALE_QUANTITY` | 재고 조정 | 현재 수량을 다시 조회해 보여주고 재입력을 유도 |
-| `SECTION_CAPACITY_EXCEEDED` | 입고 완료, 재고 증량 조정 | 구역 수용량 초과 안내, 다른 구역 선택 유도 |
-| `INSUFFICIENT_STOCK` | 재고 할당 | 메시지의 SKU별 요청·가용 수량을 그대로 노출 |
-| `ORDER_IN_PICKING` | 발주 취소·보류 | 피킹이 시작되어 불가함을 안내 |
+| `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `INTERNAL_ERROR` | 공통 코드의 기본 메시지는 행동을 안내하지 않음 | 클라이언트 문구 |
+| `SECTION_CAPACITY_EXCEEDED` | 입고 완료·재고 증량 시 발생. 서버 메시지에 다음 행동이 없음 | 다른 구역 선택 유도 |
+| `STALE_QUANTITY` | 서버 메시지로 충분 | 메시지 표시 + 화면에서 현재 수량을 다시 조회 |
+| `INSUFFICIENT_STOCK` | 서버 메시지에 SKU별 요청·가용 수량이 담김 | 메시지 그대로 노출 |
+| `ORDER_IN_PICKING` | 서버 메시지로 충분 | 메시지 표시 |
+
+코드가 필요 이상으로 늘지 않게, 서버 메시지로 충분하면 매핑하지 않는다.
 
 공통 컴포넌트: `ReasonDialog`(사유 입력, ≤500자), `ConfirmDialog`(확인), `StatusBadge`(상태·진행 단계 배지) — `app/components/common/`.
-
-(필요한 코드가 생기면 행을 추가한다.)
 
 ## 5. 연동 현황
 
