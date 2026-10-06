@@ -17,6 +17,8 @@ import { getErrorMessage } from "~/lib/api/error-messages"
 import type { PurchaseOrder } from "~/lib/api/purchase-order"
 import { useCurrentUser } from "~/lib/current-user"
 
+import { InboundRegisterDialog } from "~/features/inbound/inbound-register-dialog"
+
 import { formatDateTime, formatWon } from "./format"
 import {
   useCancelPurchaseOrder,
@@ -116,6 +118,7 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
   const { userId, role } = useCurrentUser()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
+  const [inboundOpen, setInboundOpen] = useState(false)
   const confirm = useConfirmPurchaseOrder()
   const cancel = useCancelPurchaseOrder()
 
@@ -127,12 +130,20 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
       order.createdBy === userId) ||
     (order.status === "CONFIRMED" && role === "HQ_ADMIN")
   const reasonRequired = order.status === "CONFIRMED"
+  // 입고는 확정된 발주에 대해서만, 창고 관리자가 등록한다.
+  const canRegisterInbound =
+    role === "WAREHOUSE_MANAGER" && order.status === "CONFIRMED"
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="font-mono">{order.purchaseOrderNo}</CardTitle>
         <div className="flex gap-2">
+          {canRegisterInbound && (
+            <Button size="sm" onClick={() => setInboundOpen(true)}>
+              입고 등록
+            </Button>
+          )}
           {canConfirm && (
             <Button
               size="sm"
@@ -197,6 +208,12 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
           </p>
         )}
       </CardContent>
+
+      <InboundRegisterDialog
+        open={inboundOpen}
+        onOpenChange={setInboundOpen}
+        purchaseOrderId={order.purchaseOrderId}
+      />
 
       <ConfirmDialog
         open={confirmOpen}

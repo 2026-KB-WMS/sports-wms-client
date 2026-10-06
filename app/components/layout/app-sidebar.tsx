@@ -7,6 +7,7 @@ import {
   Store,
   Truck,
   ClipboardList,
+  PackageCheck,
   Box,
 } from "lucide-react"
 
@@ -39,8 +40,20 @@ const navItems: {
   enabled: boolean
   roles: Role[]
 }[] = [
-  { label: "개요", icon: LayoutDashboard, href: "/", enabled: true, roles: ALL_ROLES },
-  { label: "상품", icon: Package, href: "/products", enabled: true, roles: ALL_ROLES },
+  {
+    label: "개요",
+    icon: LayoutDashboard,
+    href: "/",
+    enabled: true,
+    roles: ALL_ROLES,
+  },
+  {
+    label: "상품",
+    icon: Package,
+    href: "/products",
+    enabled: true,
+    roles: ALL_ROLES,
+  },
   {
     label: "창고",
     icon: Warehouse,
@@ -73,6 +86,13 @@ const navItems: {
     label: "창고 발주",
     icon: ClipboardList,
     href: "/purchase-orders",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+  },
+  {
+    label: "입고",
+    icon: PackageCheck,
+    href: "/inbounds",
     enabled: true,
     roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
   },
