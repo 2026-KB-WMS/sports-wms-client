@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { ApiError } from "~/lib/api/client"
+import { getErrorMessage } from "~/lib/api/error-messages"
 import type { ProductSummary, ProductSkuListItem } from "~/lib/api/product"
 
 import {
@@ -180,9 +180,7 @@ export function ProductPage() {
           )}
           {currentQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {currentQuery.error instanceof ApiError
-                ? currentQuery.error.message
-                : "목록을 불러오지 못했습니다."}
+              {getErrorMessage(currentQuery.error, "목록을 불러오지 못했습니다.")}
             </p>
           )}
           {!currentQuery.isLoading &&
@@ -429,9 +427,7 @@ function ProductCreateForm({
         </div>
         {createProduct.isError && (
           <p className="text-sm text-destructive sm:col-span-2">
-            {createProduct.error instanceof ApiError
-              ? createProduct.error.message
-              : "등록에 실패했습니다."}
+            {getErrorMessage(createProduct.error, "등록에 실패했습니다.")}
           </p>
         )}
         <div className="sm:col-span-2">
@@ -621,9 +617,7 @@ function SkuCreateForm({
         </div>
         {createSku.isError && (
           <p className="text-sm text-destructive sm:col-span-3">
-            {createSku.error instanceof ApiError
-              ? createSku.error.message
-              : "등록에 실패했습니다."}
+            {getErrorMessage(createSku.error, "등록에 실패했습니다.")}
           </p>
         )}
         <div className="sm:col-span-3">

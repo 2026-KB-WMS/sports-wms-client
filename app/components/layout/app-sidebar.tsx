@@ -8,6 +8,7 @@ import {
   Box,
 } from "lucide-react"
 
+import { DevUserSwitcher } from "~/components/layout/dev-user-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -20,20 +21,51 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar"
+import { type Role, useCurrentUser } from "~/lib/current-user"
 
 /**
- * 도메인별 화면은 순서대로 구현되며(상품 -> 창고 -> 재고 -> 지점),
+ * 메뉴는 역할별로 노출한다(roles). 도메인별 화면은 순서대로 구현되며,
  * 아직 라우트가 없는 항목은 href를 "#"으로 두고 비활성 처리한다.
+ * 역할별 접근 범위의 기준은 wms-server docs/api/*.md의 권한 표다.
  */
-const navItems = [
-  { label: "개요", icon: LayoutDashboard, href: "/", enabled: true },
-  { label: "상품", icon: Package, href: "/products", enabled: true },
-  { label: "창고", icon: Warehouse, href: "/warehouses", enabled: true },
-  { label: "재고", icon: Boxes, href: "/inventory", enabled: true },
-  { label: "지점", icon: Store, href: "#", enabled: false },
+const ALL_ROLES: Role[] = ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"]
+
+const navItems: {
+  label: string
+  icon: typeof Box
+  href: string
+  enabled: boolean
+  roles: Role[]
+}[] = [
+  { label: "개요", icon: LayoutDashboard, href: "/", enabled: true, roles: ALL_ROLES },
+  { label: "상품", icon: Package, href: "/products", enabled: true, roles: ALL_ROLES },
+  {
+    label: "창고",
+    icon: Warehouse,
+    href: "/warehouses",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+  },
+  {
+    label: "재고",
+    icon: Boxes,
+    href: "/inventory",
+    enabled: true,
+    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+  },
+  {
+    label: "지점",
+    icon: Store,
+    href: "#",
+    enabled: false,
+    roles: ["HQ_ADMIN", "STORE_OWNER"],
+  },
 ]
 
 export function AppSidebar() {
+  const { role } = useCurrentUser()
+  const visibleItems = navItems.filter((item) => item.roles.includes(role))
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -51,7 +83,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>워크스페이스</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) =>
+              {visibleItems.map((item) =>
                 item.enabled ? (
                   <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton
@@ -81,9 +113,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <p className="px-2 py-1.5 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          로그인 연동 예정
-        </p>
+        <DevUserSwitcher />
       </SidebarFooter>
     </Sidebar>
   )

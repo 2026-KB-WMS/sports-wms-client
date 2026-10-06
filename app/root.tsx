@@ -11,6 +11,7 @@ import {
 
 import type { Route } from "./+types/root"
 import { createQueryClient } from "~/lib/api/query-client"
+import { CurrentUserProvider } from "~/lib/current-user"
 import "./app.css"
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,9 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <CurrentUserProvider>
+        <Outlet />
+      </CurrentUserProvider>
     </QueryClientProvider>
   )
 }
