@@ -141,8 +141,10 @@ export function getDefectSections(inboundId: number) {
 }
 
 /** 창고 관리자만. 확정(CONFIRMED)된 발주에 대해서만, 같은 발주에는 진행 중 입고를 1건만 둘 수 있다. */
-export function createInbound(body: InboundCreateInput) {
-  return apiClient.post<Inbound>("/api/v1/inbounds", body)
+export function createInbound(userId: number, body: InboundCreateInput) {
+  return apiClient.post<Inbound>("/api/v1/inbounds", body, {
+    query: { userId },
+  })
 }
 
 /**
@@ -175,9 +177,14 @@ export function completeInbound(inboundId: number, userId: number) {
 }
 
 /** ARRIVED·INSPECTING에서만. 사유 필수(≤500). 재고는 바뀌지 않는다. */
-export function cancelInbound(inboundId: number, reason: string) {
+export function cancelInbound(
+  userId: number,
+  inboundId: number,
+  reason: string
+) {
   return apiClient.patch<{ inboundId: number; status: InboundStatus }>(
     `/api/v1/inbounds/${inboundId}/cancel`,
-    { reason }
+    { reason },
+    { query: { userId } }
   )
 }

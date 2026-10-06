@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import * as inboundApi from "~/lib/api/inbound"
+import { useCurrentUser } from "~/lib/current-user"
 
 /**
  * 입고 도메인 TanStack Query 훅. 쿼리 키는 ["inbound", 리소스, 조건] 형태로 통일한다.
@@ -53,8 +54,10 @@ export function useDefectSections(inboundId: number | null, enabled = true) {
 
 export function useCreateInbound() {
   const queryClient = useQueryClient()
+  const { userId } = useCurrentUser()
   return useMutation({
-    mutationFn: inboundApi.createInbound,
+    mutationFn: (body: inboundApi.InboundCreateInput) =>
+      inboundApi.createInbound(userId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
     },
@@ -101,6 +104,7 @@ export function useCompleteInbound() {
 
 export function useCancelInbound() {
   const queryClient = useQueryClient()
+  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: ({
       inboundId,
@@ -108,7 +112,7 @@ export function useCancelInbound() {
     }: {
       inboundId: number
       reason: string
-    }) => inboundApi.cancelInbound(inboundId, reason),
+    }) => inboundApi.cancelInbound(userId, inboundId, reason),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })

@@ -92,21 +92,27 @@ export function getPurchaseOrderDetails(purchaseOrderId: number) {
 }
 
 /** 창고 관리자만, 본인 담당 창고에 한해 등록한다. 항목 단가는 서버가 SKU 현재 매입가로 채운다. */
-export function createPurchaseOrder(body: PurchaseOrderCreateInput) {
+export function createPurchaseOrder(
+  userId: number,
+  body: PurchaseOrderCreateInput
+) {
   return apiClient.post<PurchaseOrder & { lines: PurchaseOrderLine[] }>(
     "/api/v1/purchase-orders",
-    body
+    body,
+    { query: { userId } }
   )
 }
 
 /** 본사 관리자만. REQUESTED → CONFIRMED. */
-export function confirmPurchaseOrder(purchaseOrderId: number) {
+export function confirmPurchaseOrder(userId: number, purchaseOrderId: number) {
   return apiClient.patch<{
     purchaseOrderId: number
     purchaseOrderNo: string
     status: PurchaseOrderStatus
     updatedAt: string
-  }>(`/api/v1/purchase-orders/${purchaseOrderId}/confirm`)
+  }>(`/api/v1/purchase-orders/${purchaseOrderId}/confirm`, undefined, {
+    query: { userId },
+  })
 }
 
 /**
@@ -114,6 +120,7 @@ export function confirmPurchaseOrder(purchaseOrderId: number) {
  * reason(≤500)은 CONFIRMED 취소 시 필수, REQUESTED 취소 시 선택.
  */
 export function cancelPurchaseOrder(
+  userId: number,
   purchaseOrderId: number,
   body?: { reason?: string }
 ) {
@@ -123,5 +130,7 @@ export function cancelPurchaseOrder(
     status: PurchaseOrderStatus
     cancelReason: string | null
     updatedAt: string
-  }>(`/api/v1/purchase-orders/${purchaseOrderId}/cancel`, body)
+  }>(`/api/v1/purchase-orders/${purchaseOrderId}/cancel`, body, {
+    query: { userId },
+  })
 }
