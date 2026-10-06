@@ -249,7 +249,17 @@ export interface LotDetail extends LotSummary {
     allocatedQuantity: number
     qualityStatus: QualityStatus
   }[]
-  inbounds: unknown[]
+  /** 이 로트가 들어온 입고 이력(InboundLine 기준). 원가 정보라 점주 응답에서는 빠진다. */
+  inbounds: {
+    inboundId: number
+    inboundNo: string
+    warehouseId: number
+    receivedAt: string | null
+    receivedQuantity: number
+    acceptedQuantity: number
+    defectiveQuantity: number
+    receivedUnitPrice: number | null
+  }[]
   createdAt: string
   updatedAt: string
 }
