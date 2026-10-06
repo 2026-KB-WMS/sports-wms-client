@@ -8,4 +8,6 @@ export default [
   route("inventory", "routes/inventory.tsx"),
   route("stores", "routes/stores.tsx"),
   route("stores/:storeId", "routes/store-detail.tsx"),
+  route("suppliers", "routes/suppliers.tsx"),
+  route("suppliers/:supplierId", "routes/supplier-detail.tsx"),
 ] satisfies RouteConfig
