@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/table"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { WarehouseSection } from "~/lib/api/warehouse"
+import { useCurrentUser } from "~/lib/current-user"
 
 import {
   useCreateSection,
@@ -24,8 +25,10 @@ import {
   useSectionsByWarehouse,
   useWarehouse,
 } from "./hooks"
+import { WarehouseManagersCard } from "./warehouse-managers-card"
 
 export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
+  const { role } = useCurrentUser()
   const warehouseQuery = useWarehouse(warehouseId)
   const sectionsQuery = useSectionsByWarehouse(warehouseId)
   const [showForm, setShowForm] = useState(false)
@@ -70,6 +73,13 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
         </Card>
       )}
 
+      {role === "HQ_ADMIN" && warehouse && (
+        <WarehouseManagersCard
+          warehouseId={warehouseId}
+          isActive={warehouse.isActive}
+        />
+      )}
+
       <div className="flex justify-end">
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>
           <Plus data-icon="inline-start" />
@@ -96,7 +106,10 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
           )}
           {sectionsQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {getErrorMessage(sectionsQuery.error, "목록을 불러오지 못했습니다.")}
+              {getErrorMessage(
+                sectionsQuery.error,
+                "목록을 불러오지 못했습니다."
+              )}
             </p>
           )}
           {!sectionsQuery.isLoading && !sectionsQuery.isError && (
