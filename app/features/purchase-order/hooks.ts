@@ -63,8 +63,11 @@ export function useSelectableWarehouses() {
 
 export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient()
+  const { userId } = useCurrentUser()
   return useMutation({
-    mutationFn: purchaseOrderApi.createPurchaseOrder,
+    mutationFn: (
+      body: Parameters<typeof purchaseOrderApi.createPurchaseOrder>[1]
+    ) => purchaseOrderApi.createPurchaseOrder(userId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
     },
@@ -73,8 +76,10 @@ export function useCreatePurchaseOrder() {
 
 export function useConfirmPurchaseOrder() {
   const queryClient = useQueryClient()
+  const { userId } = useCurrentUser()
   return useMutation({
-    mutationFn: purchaseOrderApi.confirmPurchaseOrder,
+    mutationFn: (purchaseOrderId: number) =>
+      purchaseOrderApi.confirmPurchaseOrder(userId, purchaseOrderId),
     // 409(이미 전이됨 등)여도 최신 상태를 다시 읽는다.
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
@@ -84,6 +89,7 @@ export function useConfirmPurchaseOrder() {
 
 export function useCancelPurchaseOrder() {
   const queryClient = useQueryClient()
+  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: ({
       purchaseOrderId,
@@ -93,6 +99,7 @@ export function useCancelPurchaseOrder() {
       reason?: string
     }) =>
       purchaseOrderApi.cancelPurchaseOrder(
+        userId,
         purchaseOrderId,
         reason ? { reason } : undefined
       ),
