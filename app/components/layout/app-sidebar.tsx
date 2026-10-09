@@ -14,6 +14,7 @@ import {
   PackageOpen,
   Box,
   KeyRound,
+  Users,
   LogOut,
 } from "lucide-react"
 
@@ -59,6 +60,13 @@ const navItems: {
     href: "/products",
     enabled: true,
     roles: ALL_ROLES,
+  },
+  {
+    label: "사용자",
+    icon: Users,
+    href: "/users",
+    enabled: true,
+    roles: ["HQ_ADMIN"],
   },
   {
     label: "창고",

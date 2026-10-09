@@ -17,6 +17,8 @@ const STATUS_STYLES: Record<string, StatusStyle> = {
   // 마스터(지점·창고·구역·공급처·SKU·상품)
   ACTIVE: { label: "활성", variant: "default" },
   INACTIVE: { label: "비활성", variant: "secondary" },
+  // 사용자(가입 승인 대기)
+  PENDING: { label: "승인 대기", variant: "secondary" },
 
   // 창고 발주 / 입고 / 지점 발주 / 출고 공통 코드
   REQUESTED: { label: "요청됨", variant: "secondary" },

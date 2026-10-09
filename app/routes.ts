@@ -8,6 +8,7 @@ export default [
   route("warehouses", "routes/warehouses.tsx"),
   route("warehouses/:warehouseId", "routes/warehouse-detail.tsx"),
   route("inventory", "routes/inventory.tsx"),
+  route("users", "routes/users.tsx"),
   route("stores", "routes/stores.tsx"),
   route("stores/:storeId", "routes/store-detail.tsx"),
   route("suppliers", "routes/suppliers.tsx"),
