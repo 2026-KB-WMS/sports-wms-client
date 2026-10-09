@@ -366,7 +366,7 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
 }
 
 /**
- * 재고 조정 폼. 인증이 아직 없어 처리자 userId는 현재 사용자 모듈(useCurrentUser)의 값을 쓴다.
+ * 재고 조정 폼. 처리자는 서버가 토큰에서 채우고, 화면에는 현재 사용자를 보여 준다.
  * 재고 조정은 창고 관리자 권한이다(서버의 역할 검사는 인증 연동 후 적용).
  */
 function InventoryAdjustForm({
@@ -381,7 +381,7 @@ function InventoryAdjustForm({
     String(target.onHandQuantity)
   )
   const [reason, setReason] = useState("")
-  const { userId, role } = useCurrentUser()
+  const { name, role } = useCurrentUser()
 
   const canSubmit = afterQuantity !== "" && reason.trim() !== ""
 
@@ -395,7 +395,6 @@ function InventoryAdjustForm({
           afterQuantity: Number(afterQuantity),
           reason,
         },
-        userId,
       },
       { onSuccess: onClose }
     )
@@ -433,7 +432,7 @@ function InventoryAdjustForm({
         <div>
           <Label>처리자</Label>
           <p className="py-2 text-sm">
-            {getRoleLabel(role)} #{userId}
+            {getRoleLabel(role)} {name}
           </p>
           {role !== "WAREHOUSE_MANAGER" && (
             <p className="text-xs text-muted-foreground">

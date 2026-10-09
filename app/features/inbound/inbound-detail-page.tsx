@@ -101,7 +101,7 @@ function InboundHeaderCard({
   inspecting: boolean
   onToggleInspect: () => void
 }) {
-  const { userId, role } = useCurrentUser()
+  const { name, role } = useCurrentUser()
   const [completeOpen, setCompleteOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const complete = useCompleteInbound()
@@ -206,7 +206,7 @@ function InboundHeaderCard({
         open={completeOpen}
         onOpenChange={setCompleteOpen}
         title="입고 완료"
-        description={`검수 내용대로 재고와 발주 수량에 반영합니다. 완료한 뒤에는 취소·정정할 수 없고 재고 조정으로 처리해야 합니다. (처리자: 사용자 #${userId})`}
+        description={`검수 내용대로 재고와 발주 수량에 반영합니다. 완료한 뒤에는 취소·정정할 수 없고 재고 조정으로 처리해야 합니다. (처리자: ${name})`}
         confirmLabel="입고 완료"
         isPending={complete.isPending}
         error={
@@ -216,7 +216,7 @@ function InboundHeaderCard({
         }
         onConfirm={() =>
           complete.mutate(
-            { inboundId: inbound.inboundId, userId },
+            { inboundId: inbound.inboundId },
             { onSuccess: () => setCompleteOpen(false) }
           )
         }

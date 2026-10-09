@@ -202,14 +202,11 @@ export interface InventoryAdjustmentResult {
   }
 }
 
-/** userId는 인증 연동 전까지 임시로 호출부에서 직접 전달한다. */
-export function adjustInventory(body: InventoryAdjustInput, userId: number) {
+/** 처리자는 서버가 토큰에서 채운다. */
+export function adjustInventory(body: InventoryAdjustInput) {
   return apiClient.post<InventoryAdjustmentResult>(
     "/api/v1/inventory/adjustments",
-    body,
-    {
-      query: { userId },
-    }
+    body
   )
 }
 

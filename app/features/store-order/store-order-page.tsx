@@ -45,7 +45,7 @@ const STATUS_OPTIONS: { value: StoreOrderStatus; label: string }[] = [
  * 점주는 본인 지점(storeId), 창고 관리자는 담당 창고(warehouseId)로 조회한다.
  */
 export function StoreOrderPage() {
-  const { userId, role } = useCurrentUser()
+  const { role } = useCurrentUser()
   const isAdmin = role === "HQ_ADMIN"
   const isOwner = role === "STORE_OWNER"
   const isManager = role === "WAREHOUSE_MANAGER"
@@ -58,7 +58,7 @@ export function StoreOrderPage() {
   const [requestedTo, setRequestedTo] = useState("")
   const [showForm, setShowForm] = useState(false)
 
-  const myStores = useMyStores(userId, isOwner).data?.items ?? []
+  const myStores = useMyStores(isOwner).data?.items ?? []
   const allStores = useStores({ isActive: true }, isAdmin).data?.items ?? []
   const storeOptions = isOwner ? myStores : allStores
   const warehouses = useSelectableWarehouses()

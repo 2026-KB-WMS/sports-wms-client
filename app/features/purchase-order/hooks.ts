@@ -40,7 +40,7 @@ export function usePurchaseOrderLines(purchaseOrderId: number | null) {
  * 본사 관리자는 전체, 창고 관리자는 본인 담당 창고만(타 창고는 서버가 403).
  */
 export function useSelectableWarehouses() {
-  const { userId, role } = useCurrentUser()
+  const { role } = useCurrentUser()
   const isManager = role === "WAREHOUSE_MANAGER"
 
   const all = useQuery({
@@ -49,8 +49,8 @@ export function useSelectableWarehouses() {
     enabled: !isManager,
   })
   const mine = useQuery({
-    queryKey: ["warehouse", "my", userId],
-    queryFn: () => warehouseApi.getMyWarehouses(userId),
+    queryKey: ["warehouse", "my"],
+    queryFn: () => warehouseApi.getMyWarehouses(),
     enabled: isManager,
   })
 
@@ -63,11 +63,10 @@ export function useSelectableWarehouses() {
 
 export function useCreatePurchaseOrder() {
   const queryClient = useQueryClient()
-  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: (
-      body: Parameters<typeof purchaseOrderApi.createPurchaseOrder>[1]
-    ) => purchaseOrderApi.createPurchaseOrder(userId, body),
+      body: Parameters<typeof purchaseOrderApi.createPurchaseOrder>[0]
+    ) => purchaseOrderApi.createPurchaseOrder(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
     },
@@ -76,10 +75,9 @@ export function useCreatePurchaseOrder() {
 
 export function useConfirmPurchaseOrder() {
   const queryClient = useQueryClient()
-  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: (purchaseOrderId: number) =>
-      purchaseOrderApi.confirmPurchaseOrder(userId, purchaseOrderId),
+      purchaseOrderApi.confirmPurchaseOrder(purchaseOrderId),
     // 409(이미 전이됨 등)여도 최신 상태를 다시 읽는다.
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
@@ -89,7 +87,6 @@ export function useConfirmPurchaseOrder() {
 
 export function useCancelPurchaseOrder() {
   const queryClient = useQueryClient()
-  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: ({
       purchaseOrderId,
@@ -99,7 +96,6 @@ export function useCancelPurchaseOrder() {
       reason?: string
     }) =>
       purchaseOrderApi.cancelPurchaseOrder(
-        userId,
         purchaseOrderId,
         reason ? { reason } : undefined
       ),

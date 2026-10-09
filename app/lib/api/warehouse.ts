@@ -80,10 +80,8 @@ export function deactivateWarehouse(warehouseId: number) {
   )
 }
 
-export function getMyWarehouses(userId: number) {
-  return apiClient.get<ListData<WarehouseMembership>>("/api/v1/warehouses/my", {
-    query: { userId },
-  })
+export function getMyWarehouses() {
+  return apiClient.get<ListData<WarehouseMembership>>("/api/v1/warehouses/my")
 }
 
 export function getManagementTypes() {

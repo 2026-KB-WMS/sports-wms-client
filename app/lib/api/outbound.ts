@@ -5,7 +5,7 @@ import type { ListData } from "./types"
  * 출고(Outbound)·재고 할당(StockAllocation) API.
  * 명세: wms-server docs/api/outbound.md, 상태 전이·부수 효과는 docs/domain/outbound.md
  * 날짜·시각은 오프셋 없는 KST(`YYYY-MM-DDTHH:mm:ss`).
- * 처리 사용자는 인증 연동 전이라 모든 쓰기 요청에 쿼리 파라미터 userId로 넘긴다.
+ * 처리 사용자는 서버가 토큰에서 채운다.
  * 점주는 이 API를 호출할 수 없다(진행 상태는 지점 발주의 progressStage로 본다).
  */
 
@@ -85,30 +85,22 @@ export function getAllocation(allocationId: number) {
  * 창고 관리자만. 발주(ASSIGNED)의 잔여 수량 전체를 FEFO로 한 번에 할당한다(all-or-nothing).
  * 부족하면 409 INSUFFICIENT_STOCK(SKU별 요청·가용 수량은 메시지에 담김).
  */
-export function allocateStoreOrder(userId: number, storeOrderId: number) {
+export function allocateStoreOrder(storeOrderId: number) {
   return apiClient.post<{
     storeOrderId: number
     orderNo: string
     items: Allocation[]
-  }>("/api/v1/allocations", { storeOrderId }, { query: { userId } })
+  }>("/api/v1/allocations", { storeOrderId })
 }
 
 /** 창고 관리자만. ALLOCATED → RELEASED. 출고에 묶인 할당은 409 ALLOCATION_IN_OUTBOUND. 사유 필수(≤500). */
-export function releaseAllocation(
-  allocationId: number,
-  userId: number,
-  reason: string
-) {
+export function releaseAllocation(allocationId: number, reason: string) {
   return apiClient.patch<{
     allocationId: number
     status: AllocationStatus
     allocatedQuantity: number
     releasedAt: string
-  }>(
-    `/api/v1/allocations/${allocationId}/release`,
-    { reason },
-    { query: { userId } }
-  )
+  }>(`/api/v1/allocations/${allocationId}/release`, { reason })
 }
 
 // ── 출고 ──────────────────────────────────────────────────
@@ -200,23 +192,19 @@ export function getOutboundDetails(outboundId: number) {
  * 창고 관리자만. 발주(ASSIGNED)에서 출고에 묶이지 않은 ALLOCATED 할당 전부를 묶어 READY 출고를 만든다.
  * 묶을 할당이 없으면 409 NO_ALLOCATION.
  */
-export function createOutbound(
-  userId: number,
-  body: { storeOrderId: number; note?: string }
-) {
+export function createOutbound(body: { storeOrderId: number; note?: string }) {
   return apiClient.post<{
     outboundId: number
     outboundNo: string
     status: OutboundStatus
-  }>("/api/v1/outbounds", body, { query: { userId } })
+  }>("/api/v1/outbounds", body)
 }
 
 /** READY → PICKING. 이 시점부터 할당 해제·본사 발주 취소가 막힌다. */
-export function startPicking(outboundId: number, userId: number) {
+export function startPicking(outboundId: number) {
   return apiClient.patch<{ outboundId: number; status: OutboundStatus }>(
     `/api/v1/outbounds/${outboundId}/picking/start`,
-    undefined,
-    { query: { userId } }
+    undefined
   )
 }
 
@@ -245,47 +233,34 @@ export interface PickingCompleteResult {
  * PICKING → PICKED. **이때 재고가 차감된다**(배송 시작이 아님). 항목 전체를 한 번에 보내야 하며,
  * 모두 0이면 409 NOTHING_PICKED. 부족분은 예약이 풀리고 발주에 미출고 수량으로 남는다.
  */
-export function completePicking(
-  outboundId: number,
-  userId: number,
-  lines: PickedLineInput[]
-) {
+export function completePicking(outboundId: number, lines: PickedLineInput[]) {
   return apiClient.patch<PickingCompleteResult>(
     `/api/v1/outbounds/${outboundId}/picking/complete`,
-    { lines },
-    { query: { userId } }
+    { lines }
   )
 }
 
 /** PICKED → SHIPPED. 재고는 바뀌지 않는다. */
-export function shipOutbound(outboundId: number, userId: number) {
+export function shipOutbound(outboundId: number) {
   return apiClient.patch<{ outboundId: number; status: OutboundStatus }>(
     `/api/v1/outbounds/${outboundId}/ship`,
-    undefined,
-    { query: { userId } }
+    undefined
   )
 }
 
 /** SHIPPED → DELIVERED. 모든 항목이 출고되고 진행 중 출고가 없으면 발주가 자동으로 COMPLETED가 된다. */
-export function deliverOutbound(outboundId: number, userId: number) {
+export function deliverOutbound(outboundId: number) {
   return apiClient.patch<{
     outboundId: number
     status: OutboundStatus
     storeOrder: { storeOrderId: number; status: string }
-  }>(`/api/v1/outbounds/${outboundId}/deliver`, undefined, {
-    query: { userId },
-  })
+  }>(`/api/v1/outbounds/${outboundId}/deliver`, undefined)
 }
 
 /** READY에서만 CANCELED로. 사유 필수(≤500). 할당은 ALLOCATED로 남아 다시 묶거나 해제할 수 있다. */
-export function cancelOutbound(
-  outboundId: number,
-  userId: number,
-  reason: string
-) {
+export function cancelOutbound(outboundId: number, reason: string) {
   return apiClient.patch<{ outboundId: number; status: OutboundStatus }>(
     `/api/v1/outbounds/${outboundId}/cancel`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }

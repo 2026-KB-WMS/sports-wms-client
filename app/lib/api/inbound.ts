@@ -5,7 +5,7 @@ import type { ListData } from "./types"
  * 입고 API.
  * 명세: wms-server docs/api/inbound.md (입고 절), 상태 전이는 docs/domain/inbound.md
  * 날짜·시각은 오프셋 없는 KST(`YYYY-MM-DDTHH:mm:ss`), 날짜는 `YYYY-MM-DD`.
- * 처리 사용자(검수·완료)는 인증 연동 전이라 쿼리 파라미터 userId로 넘긴다.
+ * 처리 사용자(검수·완료 등)는 서버가 토큰에서 채운다.
  */
 
 export type InboundStatus = "ARRIVED" | "INSPECTING" | "COMPLETED" | "CANCELED"
@@ -141,50 +141,36 @@ export function getDefectSections(inboundId: number) {
 }
 
 /** 창고 관리자만. 확정(CONFIRMED)된 발주에 대해서만, 같은 발주에는 진행 중 입고를 1건만 둘 수 있다. */
-export function createInbound(userId: number, body: InboundCreateInput) {
-  return apiClient.post<Inbound>("/api/v1/inbounds", body, {
-    query: { userId },
-  })
+export function createInbound(body: InboundCreateInput) {
+  return apiClient.post<Inbound>("/api/v1/inbounds", body)
 }
 
 /**
  * 검수 항목 **전체**를 통째로 교체한다(재호출 가능, 재고 미반영).
  * 처음 호출하면 ARRIVED → INSPECTING.
  */
-export function inspectInbound(
-  inboundId: number,
-  userId: number,
-  lines: InspectLineInput[]
-) {
+export function inspectInbound(inboundId: number, lines: InspectLineInput[]) {
   return apiClient.patch<{ inboundId: number; status: InboundStatus }>(
     `/api/v1/inbounds/${inboundId}/inspect`,
-    { lines },
-    { query: { userId } }
+    { lines }
   )
 }
 
 /** INSPECTING에서만. 재고·발주 수량이 한 트랜잭션으로 반영된다. */
-export function completeInbound(inboundId: number, userId: number) {
+export function completeInbound(inboundId: number) {
   return apiClient.patch<{
     inboundId: number
     inboundNo: string
     status: InboundStatus
     receivedAt: string
     purchaseOrder: { purchaseOrderId: number; status: string }
-  }>(`/api/v1/inbounds/${inboundId}/complete`, undefined, {
-    query: { userId },
-  })
+  }>(`/api/v1/inbounds/${inboundId}/complete`, undefined)
 }
 
 /** ARRIVED·INSPECTING에서만. 사유 필수(≤500). 재고는 바뀌지 않는다. */
-export function cancelInbound(
-  userId: number,
-  inboundId: number,
-  reason: string
-) {
+export function cancelInbound(inboundId: number, reason: string) {
   return apiClient.patch<{ inboundId: number; status: InboundStatus }>(
     `/api/v1/inbounds/${inboundId}/cancel`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }
