@@ -1,4 +1,5 @@
-import { Link } from "react-router"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router"
 import {
   LayoutDashboard,
   Package,
@@ -12,9 +13,12 @@ import {
   Layers,
   PackageOpen,
   Box,
+  KeyRound,
+  Users,
+  LogOut,
 } from "lucide-react"
 
-import { DevUserSwitcher } from "~/components/layout/dev-user-switcher"
+import { ChangePasswordDialog } from "~/features/auth/change-password-dialog"
 import {
   Sidebar,
   SidebarContent,
@@ -27,7 +31,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar"
-import { type Role, useCurrentUser } from "~/lib/current-user"
+import { type Role, getRoleLabel, useCurrentUser } from "~/lib/current-user"
 
 /**
  * 메뉴는 역할별로 노출한다(roles). 도메인별 화면은 순서대로 구현되며,
@@ -56,6 +60,13 @@ const navItems: {
     href: "/products",
     enabled: true,
     roles: ALL_ROLES,
+  },
+  {
+    label: "사용자",
+    icon: Users,
+    href: "/users",
+    enabled: true,
+    roles: ["HQ_ADMIN"],
   },
   {
     label: "창고",
@@ -123,7 +134,9 @@ const navItems: {
 ]
 
 export function AppSidebar() {
-  const { role } = useCurrentUser()
+  const { role, name, loginId, logout } = useCurrentUser()
+  const navigate = useNavigate()
+  const [passwordOpen, setPasswordOpen] = useState(false)
   const visibleItems = navItems.filter((item) => item.roles.includes(role))
 
   return (
@@ -173,7 +186,39 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <DevUserSwitcher />
+        <div className="flex flex-col gap-1 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
+          <p className="truncate text-sm font-semibold">{name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {getRoleLabel(role)} · {loginId}
+          </p>
+        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="비밀번호 변경"
+              onClick={() => setPasswordOpen(true)}
+            >
+              <KeyRound />
+              <span>비밀번호 변경</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="로그아웃"
+              onClick={() => {
+                logout()
+                navigate("/login")
+              }}
+            >
+              <LogOut />
+              <span>로그아웃</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <ChangePasswordDialog
+          open={passwordOpen}
+          onOpenChange={setPasswordOpen}
+        />
       </SidebarFooter>
     </Sidebar>
   )

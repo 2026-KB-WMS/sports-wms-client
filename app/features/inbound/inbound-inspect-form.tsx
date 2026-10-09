@@ -9,7 +9,6 @@ import { formatWon } from "~/features/purchase-order/format"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { InboundLine, InspectLineInput } from "~/lib/api/inbound"
 import type { PurchaseOrderLine } from "~/lib/api/purchase-order"
-import { useCurrentUser } from "~/lib/current-user"
 
 import {
   useAssignableSections,
@@ -133,7 +132,6 @@ export function InboundInspectForm({
   savedItems: InboundLine[]
   onDone: () => void
 }) {
-  const { userId } = useCurrentUser()
   const inspect = useInspectInbound()
   const poLines = usePurchaseOrderLines(purchaseOrderId).data?.items ?? []
   const acceptedSections = useAssignableSections(inboundId).data?.items ?? []
@@ -193,7 +191,7 @@ export function InboundInspectForm({
           : undefined,
       }
     })
-    inspect.mutate({ inboundId, userId, lines: body }, { onSuccess: onDone })
+    inspect.mutate({ inboundId, lines: body }, { onSuccess: onDone })
   }
 
   return (

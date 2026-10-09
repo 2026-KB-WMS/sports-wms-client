@@ -45,11 +45,10 @@ function useInvalidateAfterTransition() {
 }
 
 export function useCreateStoreOrder() {
-  const { userId } = useCurrentUser()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (body: storeOrderApi.StoreOrderCreateInput) =>
-      storeOrderApi.createStoreOrder(userId, body),
+      storeOrderApi.createStoreOrder(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["store-order"] })
     },
@@ -57,18 +56,16 @@ export function useCreateStoreOrder() {
 }
 
 export function useApproveStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: (storeOrderId: number) =>
-      storeOrderApi.approveStoreOrder(storeOrderId, userId),
+      storeOrderApi.approveStoreOrder(storeOrderId),
     // 409(이미 전이됨 등)여도 최신 상태를 다시 읽는다.
     onSettled: invalidate,
   })
 }
 
 export function useRejectStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: ({
@@ -77,13 +74,12 @@ export function useRejectStoreOrder() {
     }: {
       storeOrderId: number
       reason: string
-    }) => storeOrderApi.rejectStoreOrder(storeOrderId, userId, reason),
+    }) => storeOrderApi.rejectStoreOrder(storeOrderId, reason),
     onSettled: invalidate,
   })
 }
 
 export function useCancelStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: ({
@@ -92,26 +88,24 @@ export function useCancelStoreOrder() {
     }: {
       storeOrderId: number
       reason?: string
-    }) => storeOrderApi.cancelStoreOrder(storeOrderId, userId, reason),
+    }) => storeOrderApi.cancelStoreOrder(storeOrderId, reason),
     onSettled: invalidate,
   })
 }
 
 export function useAssignStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: (body: {
       storeOrderId: number
       warehouseId: number
       reason?: string
-    }) => storeOrderApi.assignStoreOrder(userId, body),
+    }) => storeOrderApi.assignStoreOrder(body),
     onSettled: invalidate,
   })
 }
 
 export function useHoldStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: ({
@@ -120,13 +114,12 @@ export function useHoldStoreOrder() {
     }: {
       storeOrderId: number
       reason: string
-    }) => storeOrderApi.holdStoreOrder(storeOrderId, userId, reason),
+    }) => storeOrderApi.holdStoreOrder(storeOrderId, reason),
     onSettled: invalidate,
   })
 }
 
 export function useResumeStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: ({
@@ -135,13 +128,12 @@ export function useResumeStoreOrder() {
     }: {
       storeOrderId: number
       reason: string
-    }) => storeOrderApi.resumeStoreOrder(storeOrderId, userId, reason),
+    }) => storeOrderApi.resumeStoreOrder(storeOrderId, reason),
     onSettled: invalidate,
   })
 }
 
 export function useCompletePartialStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateAfterTransition()
   return useMutation({
     mutationFn: ({
@@ -150,7 +142,7 @@ export function useCompletePartialStoreOrder() {
     }: {
       storeOrderId: number
       reason: string
-    }) => storeOrderApi.completePartialStoreOrder(storeOrderId, userId, reason),
+    }) => storeOrderApi.completePartialStoreOrder(storeOrderId, reason),
     onSettled: invalidate,
   })
 }

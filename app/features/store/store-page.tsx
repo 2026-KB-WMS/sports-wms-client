@@ -112,8 +112,7 @@ function AdminStoreList() {
 }
 
 function MyStoreList() {
-  const { userId } = useCurrentUser()
-  const myStoresQuery = useMyStores(userId)
+  const myStoresQuery = useMyStores()
   const stores = myStoresQuery.data?.items ?? []
 
   return (

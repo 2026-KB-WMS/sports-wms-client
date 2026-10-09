@@ -69,11 +69,9 @@ export function useAdjustInventory() {
   return useMutation({
     mutationFn: ({
       body,
-      userId,
     }: {
       body: inventoryApi.InventoryAdjustInput
-      userId: number
-    }) => inventoryApi.adjustInventory(body, userId),
+    }) => inventoryApi.adjustInventory(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] })
     },

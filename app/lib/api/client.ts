@@ -1,3 +1,5 @@
+import { getToken, handleUnauthorized } from "~/lib/auth-token"
+
 import type { ApiResponse, ErrorResponse, FieldError } from "./types"
 
 /**
@@ -51,11 +53,16 @@ function buildUrl(path: string, query?: QueryParams) {
   return `${API_BASE_URL}${path}${qs ? `?${qs}` : ""}`
 }
 
-/** 공통 요청 헤더. 인증(JWT)을 붙일 때 이곳에서 Authorization을 추가한다. */
+/** 토큰 없이 호출하는 인증 API. 이 경로의 401은 "토큰 만료"가 아니라 "자격 증명 불일치"다. */
+const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/signup"]
+
+/** 공통 요청 헤더. 로그인 토큰이 있으면 Authorization을 붙인다. */
 function buildHeaders(hasBody: boolean): HeadersInit {
+  const token = getToken()
   return {
     Accept: "application/json",
     ...(hasBody ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
 
@@ -91,6 +98,9 @@ async function request<T>(
   const json = await readJson(response)
 
   if (!response.ok) {
+    if (response.status === 401 && !PUBLIC_AUTH_PATHS.includes(path)) {
+      handleUnauthorized()
+    }
     const error = json as Partial<ErrorResponse> | null
     throw new ApiError(
       error?.statusCode ?? response.status,

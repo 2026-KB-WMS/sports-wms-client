@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { UserName } from "~/features/user/user-name"
+import { UserSelect } from "~/features/user/user-select"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { WarehouseMember } from "~/lib/api/warehouse"
 
@@ -80,7 +82,7 @@ export function WarehouseManagersCard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>사용자 ID</TableHead>
+                  <TableHead>사용자</TableHead>
                   <TableHead>역할</TableHead>
                   <TableHead>배정일시</TableHead>
                   <TableHead />
@@ -89,7 +91,9 @@ export function WarehouseManagersCard({
               <TableBody>
                 {managers.map((member) => (
                   <TableRow key={member.warehouseMemberId}>
-                    <TableCell>{member.userId}</TableCell>
+                    <TableCell>
+                      <UserName userId={member.userId} />
+                    </TableCell>
                     <TableCell>{roleName(member.memberRole)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {member.assignedAt.replace("T", " ")}
@@ -160,16 +164,12 @@ function AssignForm({ warehouseId }: { warehouseId: number }) {
 
   return (
     <div className="flex flex-wrap items-end gap-4">
-      <div className="w-32">
-        <Label htmlFor="warehouse-assign-user-id">사용자 ID</Label>
-        <Input
-          id="warehouse-assign-user-id"
-          type="number"
-          min={1}
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        />
-      </div>
+      <UserSelect
+        id="warehouse-assign-user"
+        role="WAREHOUSE_MANAGER"
+        value={userId}
+        onChange={setUserId}
+      />
       <div className="w-40">
         <Label htmlFor="warehouse-assign-member-role">역할</Label>
         <Select

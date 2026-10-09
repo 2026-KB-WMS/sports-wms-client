@@ -25,10 +25,10 @@ export function useStore(storeId: number | null) {
   })
 }
 
-export function useMyStores(userId: number, enabled = true) {
+export function useMyStores(enabled = true) {
   return useQuery({
-    queryKey: ["store", "my", userId],
-    queryFn: () => storeApi.getMyStores(userId),
+    queryKey: ["store", "my"],
+    queryFn: () => storeApi.getMyStores(),
     enabled,
   })
 }

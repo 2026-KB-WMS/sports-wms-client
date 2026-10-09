@@ -46,17 +46,15 @@ function useInvalidateFulfillment() {
 }
 
 export function useAllocateStoreOrder() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: (storeOrderId: number) =>
-      outboundApi.allocateStoreOrder(userId, storeOrderId),
+      outboundApi.allocateStoreOrder(storeOrderId),
     onSettled: invalidate,
   })
 }
 
 export function useReleaseAllocation() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: ({
@@ -65,33 +63,30 @@ export function useReleaseAllocation() {
     }: {
       allocationId: number
       reason: string
-    }) => outboundApi.releaseAllocation(allocationId, userId, reason),
+    }) => outboundApi.releaseAllocation(allocationId, reason),
     onSettled: invalidate,
   })
 }
 
 export function useCreateOutbound() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: (body: { storeOrderId: number; note?: string }) =>
-      outboundApi.createOutbound(userId, body),
+      outboundApi.createOutbound(body),
     onSettled: invalidate,
   })
 }
 
 export function useStartPicking() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: (outboundId: number) =>
-      outboundApi.startPicking(outboundId, userId),
+      outboundApi.startPicking(outboundId),
     onSettled: invalidate,
   })
 }
 
 export function useCompletePicking() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: ({
@@ -100,33 +95,30 @@ export function useCompletePicking() {
     }: {
       outboundId: number
       lines: outboundApi.PickedLineInput[]
-    }) => outboundApi.completePicking(outboundId, userId, lines),
+    }) => outboundApi.completePicking(outboundId, lines),
     onSettled: invalidate,
   })
 }
 
 export function useShipOutbound() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: (outboundId: number) =>
-      outboundApi.shipOutbound(outboundId, userId),
+      outboundApi.shipOutbound(outboundId),
     onSettled: invalidate,
   })
 }
 
 export function useDeliverOutbound() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: (outboundId: number) =>
-      outboundApi.deliverOutbound(outboundId, userId),
+      outboundApi.deliverOutbound(outboundId),
     onSettled: invalidate,
   })
 }
 
 export function useCancelOutbound() {
-  const { userId } = useCurrentUser()
   const invalidate = useInvalidateFulfillment()
   return useMutation({
     mutationFn: ({
@@ -135,7 +127,7 @@ export function useCancelOutbound() {
     }: {
       outboundId: number
       reason: string
-    }) => outboundApi.cancelOutbound(outboundId, userId, reason),
+    }) => outboundApi.cancelOutbound(outboundId, reason),
     onSettled: invalidate,
   })
 }

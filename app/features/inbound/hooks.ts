@@ -54,10 +54,9 @@ export function useDefectSections(inboundId: number | null, enabled = true) {
 
 export function useCreateInbound() {
   const queryClient = useQueryClient()
-  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: (body: inboundApi.InboundCreateInput) =>
-      inboundApi.createInbound(userId, body),
+      inboundApi.createInbound(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
     },
@@ -69,13 +68,11 @@ export function useInspectInbound() {
   return useMutation({
     mutationFn: ({
       inboundId,
-      userId,
       lines,
     }: {
       inboundId: number
-      userId: number
       lines: inboundApi.InspectLineInput[]
-    }) => inboundApi.inspectInbound(inboundId, userId, lines),
+    }) => inboundApi.inspectInbound(inboundId, lines),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
     },
@@ -87,11 +84,9 @@ export function useCompleteInbound() {
   return useMutation({
     mutationFn: ({
       inboundId,
-      userId,
     }: {
       inboundId: number
-      userId: number
-    }) => inboundApi.completeInbound(inboundId, userId),
+    }) => inboundApi.completeInbound(inboundId),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
       // 완료 시 재고·구역 사용량·발주 항목 수량이 바뀐다.
@@ -104,7 +99,6 @@ export function useCompleteInbound() {
 
 export function useCancelInbound() {
   const queryClient = useQueryClient()
-  const { userId } = useCurrentUser()
   return useMutation({
     mutationFn: ({
       inboundId,
@@ -112,7 +106,7 @@ export function useCancelInbound() {
     }: {
       inboundId: number
       reason: string
-    }) => inboundApi.cancelInbound(userId, inboundId, reason),
+    }) => inboundApi.cancelInbound(inboundId, reason),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })

@@ -35,7 +35,9 @@ export function AppHeader({ section, title, description }: AppHeaderProps) {
       </div>
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        )}
       </div>
     </header>
   )

@@ -5,8 +5,7 @@ import type { ListData } from "./types"
  * 지점 발주(지점 → 창고) API. 창고 발주(`/purchase-orders`)와 구분한다.
  * 명세: wms-server docs/api/store-order.md, 상태 전이는 docs/domain/store-order.md
  * 날짜·시각은 오프셋 없는 KST(`YYYY-MM-DDTHH:mm:ss`).
- * 처리 사용자(등록·승인·반려·취소·배정·보류·재개·부분 종결)는 인증 연동 전이라
- * 쿼리 파라미터 userId로 넘긴다.
+ * 처리 사용자(등록·승인·반려·취소·배정·보류·재개·부분 종결)는 서버가 토큰에서 채운다.
  * `GET /orders/my`는 서버 미구현이라 쓰지 않는다(목록은 `GET /orders`에 storeId·warehouseId로 좁힌다).
  */
 
@@ -137,33 +136,26 @@ export function getStoreOrderDetails(storeOrderId: number) {
 }
 
 /** 점주만. 항목 단가는 서버가 SKU 현재 공급가로 채운다(없으면 409 SUPPLY_PRICE_MISSING). */
-export function createStoreOrder(userId: number, body: StoreOrderCreateInput) {
+export function createStoreOrder(body: StoreOrderCreateInput) {
   return apiClient.post<StoreOrder & { lines: StoreOrderLine[] }>(
     "/api/v1/orders",
-    body,
-    { query: { userId } }
+    body
   )
 }
 
 /** 본사 관리자만. REQUESTED → APPROVED. */
-export function approveStoreOrder(storeOrderId: number, userId: number) {
+export function approveStoreOrder(storeOrderId: number) {
   return apiClient.patch<{ storeOrderId: number; status: StoreOrderStatus }>(
     `/api/v1/orders/${storeOrderId}/approve`,
-    undefined,
-    { query: { userId } }
+    undefined
   )
 }
 
 /** 본사 관리자만. REQUESTED → REJECTED. 사유 필수(≤500). */
-export function rejectStoreOrder(
-  storeOrderId: number,
-  userId: number,
-  reason: string
-) {
+export function rejectStoreOrder(storeOrderId: number, reason: string) {
   return apiClient.patch<{ storeOrderId: number; status: StoreOrderStatus }>(
     `/api/v1/orders/${storeOrderId}/reject`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }
 
@@ -179,15 +171,10 @@ export interface CancelStoreOrderResult {
  * reason(≤500)은 승인 이후 취소에서 필수, REQUESTED 취소에서 선택.
  * 피킹이 시작된 출고가 있으면 409 ORDER_IN_PICKING.
  */
-export function cancelStoreOrder(
-  storeOrderId: number,
-  userId: number,
-  reason?: string
-) {
+export function cancelStoreOrder(storeOrderId: number, reason?: string) {
   return apiClient.patch<CancelStoreOrderResult>(
     `/api/v1/orders/${storeOrderId}/cancel`,
-    reason ? { reason } : undefined,
-    { query: { userId } }
+    reason ? { reason } : undefined
   )
 }
 
@@ -195,41 +182,32 @@ export function cancelStoreOrder(
  * 본사 관리자만. 최초 배정(APPROVED → ASSIGNED)과 재배정(ASSIGNED의 창고 변경)을 함께 쓴다.
  * 재배정은 reason 필수이며 할당·출고가 남아 있으면 409 ORDER_IN_FULFILLMENT.
  */
-export function assignStoreOrder(
-  userId: number,
-  body: { storeOrderId: number; warehouseId: number; reason?: string }
-) {
+export function assignStoreOrder(body: {
+  storeOrderId: number
+  warehouseId: number
+  reason?: string
+}) {
   return apiClient.post<{
     storeOrderId: number
     status: StoreOrderStatus
     warehouseId: number
     warehouseName: string
-  }>("/api/v1/orders/assign", body, { query: { userId } })
+  }>("/api/v1/orders/assign", body)
 }
 
 /** 창고 관리자만. ASSIGNED → ON_HOLD. 사유 필수. 피킹이 시작된 출고가 있으면 409 ORDER_IN_PICKING. */
-export function holdStoreOrder(
-  storeOrderId: number,
-  userId: number,
-  reason: string
-) {
+export function holdStoreOrder(storeOrderId: number, reason: string) {
   return apiClient.patch<{ storeOrderId: number; status: StoreOrderStatus }>(
     `/api/v1/orders/${storeOrderId}/hold`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }
 
 /** 창고 관리자만. ON_HOLD → ASSIGNED. 사유 필수. */
-export function resumeStoreOrder(
-  storeOrderId: number,
-  userId: number,
-  reason: string
-) {
+export function resumeStoreOrder(storeOrderId: number, reason: string) {
   return apiClient.patch<{ storeOrderId: number; status: StoreOrderStatus }>(
     `/api/v1/orders/${storeOrderId}/resume`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }
 
@@ -252,12 +230,10 @@ export interface CompletePartialResult {
  */
 export function completePartialStoreOrder(
   storeOrderId: number,
-  userId: number,
   reason: string
 ) {
   return apiClient.patch<CompletePartialResult>(
     `/api/v1/orders/${storeOrderId}/complete-partial`,
-    { reason },
-    { query: { userId } }
+    { reason }
   )
 }

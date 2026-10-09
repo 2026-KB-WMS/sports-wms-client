@@ -72,11 +72,9 @@ export function deactivateStore(storeId: number, body?: { reason?: string }) {
   )
 }
 
-/** STORE_OWNER 전용. 인증 연동 전이라 userId를 쿼리로 넘긴다. */
-export function getMyStores(userId: number) {
-  return apiClient.get<ListData<StoreMembership>>("/api/v1/stores/my", {
-    query: { userId },
-  })
+/** STORE_OWNER 전용. 소속 지점은 토큰 기준이다. */
+export function getMyStores() {
+  return apiClient.get<ListData<StoreMembership>>("/api/v1/stores/my")
 }
 
 export function getStoreManagementTypes() {
