@@ -4,7 +4,7 @@ import { Outlet, useLocation, useNavigate } from "react-router"
 import { useAuth } from "~/lib/current-user"
 
 /** 로그인 없이 볼 수 있는 경로 */
-const PUBLIC_PATHS = ["/login"]
+const PUBLIC_PATHS = ["/login", "/signup"]
 
 /** 로그인 후 돌아갈 경로. 같은 사이트 안의 경로만 허용한다(open redirect 방지). */
 export function safeRedirectTo(value: string | null) {
@@ -23,7 +23,10 @@ export function AuthGate() {
 
   useEffect(() => {
     if (status === "unauthenticated" && !isPublic) {
-      const redirectTo = pathname === "/" ? "" : `?redirectTo=${encodeURIComponent(pathname + search)}`
+      const redirectTo =
+        pathname === "/"
+          ? ""
+          : `?redirectTo=${encodeURIComponent(pathname + search)}`
       navigate(`/login${redirectTo}`, { replace: true })
     } else if (status === "authenticated" && isPublic) {
       navigate(safeRedirectTo(new URLSearchParams(search).get("redirectTo")), {
@@ -33,6 +36,7 @@ export function AuthGate() {
   }, [status, isPublic, pathname, search, navigate])
 
   if (status === "loading") return null
-  if (isPublic ? status === "authenticated" : status !== "authenticated") return null
+  if (isPublic ? status === "authenticated" : status !== "authenticated")
+    return null
   return <Outlet />
 }

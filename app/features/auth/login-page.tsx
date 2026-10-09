@@ -1,5 +1,6 @@
 import { Box } from "lucide-react"
 import { useState } from "react"
+import { Link } from "react-router"
 
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -44,7 +45,9 @@ export function LoginPage() {
           <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Box className="size-4" strokeWidth={2.5} />
           </div>
-          <span className="text-sm font-bold tracking-tight">WMS 창고 관리</span>
+          <span className="text-sm font-bold tracking-tight">
+            WMS 창고 관리
+          </span>
         </div>
         <Card>
           <CardHeader>
@@ -80,6 +83,12 @@ export function LoginPage() {
               <Button type="submit" disabled={!canSubmit || submitting}>
                 {submitting ? "로그인 중..." : "로그인"}
               </Button>
+              <p className="text-center text-sm text-muted-foreground">
+                계정이 없나요?{" "}
+                <Link to="/signup" className="text-foreground underline">
+                  가입 신청
+                </Link>
+              </p>
             </form>
           </CardContent>
         </Card>

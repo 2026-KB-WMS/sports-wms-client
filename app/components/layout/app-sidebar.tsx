@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, useNavigate } from "react-router"
 import {
   LayoutDashboard,
@@ -12,9 +13,11 @@ import {
   Layers,
   PackageOpen,
   Box,
+  KeyRound,
   LogOut,
 } from "lucide-react"
 
+import { ChangePasswordDialog } from "~/features/auth/change-password-dialog"
 import {
   Sidebar,
   SidebarContent,
@@ -125,6 +128,7 @@ const navItems: {
 export function AppSidebar() {
   const { role, name, loginId, logout } = useCurrentUser()
   const navigate = useNavigate()
+  const [passwordOpen, setPasswordOpen] = useState(false)
   const visibleItems = navItems.filter((item) => item.roles.includes(role))
 
   return (
@@ -183,6 +187,15 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
+              tooltip="비밀번호 변경"
+              onClick={() => setPasswordOpen(true)}
+            >
+              <KeyRound />
+              <span>비밀번호 변경</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
               tooltip="로그아웃"
               onClick={() => {
                 logout()
@@ -194,6 +207,10 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <ChangePasswordDialog
+          open={passwordOpen}
+          onOpenChange={setPasswordOpen}
+        />
       </SidebarFooter>
     </Sidebar>
   )
