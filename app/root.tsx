@@ -3,13 +3,13 @@ import { useState } from "react"
 import {
   Links,
   Meta,
-  Outlet,
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
 } from "react-router"
 
 import type { Route } from "./+types/root"
+import { AuthGate } from "~/components/layout/auth-gate"
 import { createQueryClient } from "~/lib/api/query-client"
 import { CurrentUserProvider } from "~/lib/current-user"
 import "./app.css"
@@ -39,7 +39,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <CurrentUserProvider>
-        <Outlet />
+        <AuthGate />
       </CurrentUserProvider>
     </QueryClientProvider>
   )

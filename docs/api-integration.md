@@ -16,8 +16,8 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 
 | 서버 현황 | 프론트 처리 |
 |---|---|
-| 인증(JWT)·회원 도메인 미구현. `SecurityConfig`가 전체 허용 | `Authorization` 헤더 없이 호출. 헤더 추가 위치는 `client.ts`의 `buildHeaders` |
-| 처리 사용자를 쿼리 파라미터 `userId`로 받음 (재고 조정, 입고 검수·완료, 지점 발주·출고 상태 전이, `/warehouses/my`, `/stores/my`) | 호출부에서 직접 넘긴다. `app/lib/current-user.tsx`의 `useCurrentUser()`로 한 곳에서 공급한다(개발용 전환기는 사이드바 하단, JWT 도입 시 이 모듈만 교체). 소속 창고·지점 조회(`/warehouses/my`, `/stores/my`)는 각 도메인 이슈에서 붙인다 |
+| 인증(JWT) 로그인 연동 완료(#31). 토큰은 `app/lib/auth-token.ts`가 저장하고 `client.ts`가 `Authorization: Bearer`로 붙인다 | 401은 토큰 삭제 후 `/login`으로 이동(`AuthGate`). 로그인·가입의 401은 제외 |
+| 처리 사용자를 쿼리 파라미터 `userId`로 받음 (재고 조정, 입고 검수·완료, 지점 발주·출고 상태 전이, `/warehouses/my`, `/stores/my`) | 호출부에서 직접 넘긴다. `app/lib/current-user.tsx`의 `useCurrentUser()`로 한 곳에서 공급한다(로그인 사용자 기준, 전환기는 제거됨). 서버는 `userId` 쿼리를 더 받지 않으므로 #32에서 제거. 소속 창고·지점 조회(`/warehouses/my`, `/stores/my`)는 각 도메인 이슈에서 붙인다 |
 | `GET /orders/my` 미구현 (인증 연동 때 소속 범위를 서버가 판별) | 지점 발주 목록은 `GET /orders`를 쓰되 점주는 `storeId`(`/stores/my`), 창고 관리자는 `warehouseId`(`/warehouses/my`)로 좁힌다. 인증이 붙으면 `/orders/my`로 교체 |
 | 역할별 403이 동작하지 않음 | 화면에서 역할로 메뉴·버튼을 숨기되, 서버 403 처리도 구현해 둔다 |
 | 페이지네이션 보류. 목록은 `data.items` 전체를 고정 정렬로 반환 | 필터는 서버 쿼리 파라미터로, 정렬·페이징은 클라이언트에서 처리. 도입 시 `ListData`에 `pageInfo`를 추가하고 훅만 바꾼다 |
@@ -64,6 +64,6 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 | 지점 발주 (`/orders`) | 11개 구현 | 완료 | `GET /orders/my` 보류 → 점주는 `storeId`, 창고 관리자는 `warehouseId`로 `GET /orders`를 좁혀 조회. 라우트는 `/store-orders` |
 | 출고·재고 할당 | 구현 | 완료 | 할당·출고 생성은 지점 발주 상세에서. 재고 차감은 피킹 완료 시점 |
 | 공통 기반 (현재 사용자, 에러 매핑, 공통 컴포넌트, 역할별 사이드바) | - | 완료 | |
-| 인증 | 미구현 | - | 서버 선행 필요 |
+| 인증 | 로그인 연동 완료(#31), 가입·비밀번호(#33)·사용자 관리(#34) 예정 | - | - |
 
 연동 순서: 지점 + 공급처 → 창고 발주·입고 → 지점 발주 → 출고·할당. (인증만 서버 선행 필요)

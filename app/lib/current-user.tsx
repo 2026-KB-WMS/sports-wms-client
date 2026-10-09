@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query"
 import {
   createContext,
   useCallback,
@@ -7,13 +8,17 @@ import {
   useState,
 } from "react"
 
+import * as authApi from "~/lib/api/auth"
+import {
+  UNAUTHORIZED_EVENT,
+  clearToken,
+  getToken,
+  setToken,
+} from "~/lib/auth-token"
+
 /**
- * 현재 사용자 모듈.
- *
- * wms-server에 인증(JWT)·회원 도메인이 아직 없어서, 처리 사용자를 `userId` 쿼리로 받는
- * API(재고 조정, 입고 검수·완료, 지점 발주·출고 상태 전이, /warehouses/my, /stores/my 등)에
- * 넘길 값을 이곳에서 한 번에 공급한다. 지금은 사이드바의 임시 전환기로 값을 정하고,
- * JWT가 도입되면 이 모듈의 값 출처만 로그인 사용자로 교체한다(사용하는 쪽은 바뀌지 않는다).
+ * 현재 사용자 모듈. 로그인 토큰과 `GET /auth/me`로 사용자를 정한다.
+ * 보호된 화면은 `AuthGate`가 로그인된 경우에만 렌더하므로 `useCurrentUser()`는 항상 사용자를 돌려준다.
  */
 
 /** 서버 역할 코드 (wms-server docs/api/conventions.md "권한 검증 공통 규칙") */
@@ -31,76 +36,107 @@ export function getRoleLabel(role: Role) {
 
 export interface CurrentUser {
   userId: number
+  loginId: string
+  name: string
   role: Role
 }
 
-interface CurrentUserContextValue extends CurrentUser {
-  setUser: (user: CurrentUser) => void
+type AuthStatus = "loading" | "authenticated" | "unauthenticated"
+
+interface AuthContextValue {
+  status: AuthStatus
+  user: CurrentUser | null
+  login: (input: authApi.LoginInput) => Promise<void>
+  logout: () => void
 }
 
-const STORAGE_KEY = "wms.current-user"
-const DEFAULT_USER: CurrentUser = { userId: 1, role: "HQ_ADMIN" }
+const AuthContext = createContext<AuthContextValue | null>(null)
 
-function isRole(value: unknown): value is Role {
-  return ROLES.some((r) => r.value === value)
+function toCurrentUser(user: CurrentUser): CurrentUser {
+  const { userId, loginId, name, role } = user
+  return { userId, loginId, name, role }
 }
-
-function isValidUserId(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
-}
-
-/** 저장된 값을 읽는다. 저장소를 못 쓰거나 값이 이상하면 null (화면은 기본값으로 동작). */
-function readStoredUser(): CurrentUser | null {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<CurrentUser> | null
-    if (isRole(parsed?.role) && isValidUserId(parsed?.userId)) {
-      return { userId: parsed.userId, role: parsed.role }
-    }
-  } catch {
-    // 저장소 접근 불가·JSON 오류는 무시한다.
-  }
-  return null
-}
-
-const CurrentUserContext = createContext<CurrentUserContextValue | null>(null)
 
 export function CurrentUserProvider({
   children,
 }: {
   children: React.ReactNode
 }) {
-  // SSR과 첫 렌더가 같도록 기본값으로 시작하고, 마운트 후 저장된 값을 반영한다.
-  const [user, setUserState] = useState<CurrentUser>(DEFAULT_USER)
+  const queryClient = useQueryClient()
+  // SSR과 첫 렌더가 같도록 loading으로 시작하고, 마운트 후 토큰을 확인한다.
+  const [status, setStatus] = useState<AuthStatus>("loading")
+  const [user, setUser] = useState<CurrentUser | null>(null)
+
+  const signOut = useCallback(() => {
+    clearToken()
+    setUser(null)
+    setStatus("unauthenticated")
+    // 이전 사용자의 캐시가 다음 사용자에게 보이지 않게 한다.
+    queryClient.clear()
+  }, [queryClient])
 
   useEffect(() => {
-    const stored = readStoredUser()
-    if (stored) setUserState(stored)
-  }, [])
-
-  const setUser = useCallback((next: CurrentUser) => {
-    setUserState(next)
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {
-      // 저장 실패해도 현재 세션에서는 그대로 동작한다.
+    if (!getToken()) {
+      setStatus("unauthenticated")
+      return
+    }
+    let cancelled = false
+    authApi
+      .getMe()
+      .then((me) => {
+        if (cancelled) return
+        setUser(toCurrentUser(me))
+        setStatus("authenticated")
+      })
+      .catch(() => {
+        // 401이면 client가 이미 토큰을 지웠다. 네트워크 오류 등은 토큰을 남기고 로그인 화면으로 보낸다.
+        if (cancelled) return
+        setUser(null)
+        setStatus("unauthenticated")
+      })
+    return () => {
+      cancelled = true
     }
   }, [])
 
-  const value = useMemo(() => ({ ...user, setUser }), [user, setUser])
+  // 요청 중 토큰이 거절(401)되면 로그아웃 상태로 바꾼다.
+  useEffect(() => {
+    window.addEventListener(UNAUTHORIZED_EVENT, signOut)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, signOut)
+  }, [signOut])
 
-  return (
-    <CurrentUserContext.Provider value={value}>
-      {children}
-    </CurrentUserContext.Provider>
+  const login = useCallback(
+    async (input: authApi.LoginInput) => {
+      const result = await authApi.login(input)
+      setToken(result.accessToken)
+      queryClient.clear()
+      setUser(toCurrentUser(result.user))
+      setStatus("authenticated")
+    },
+    [queryClient]
   )
+
+  const value = useMemo(
+    () => ({ status, user, login, logout: signOut }),
+    [status, user, login, signOut]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useCurrentUser() {
-  const value = useContext(CurrentUserContext)
+export function useAuth() {
+  const value = useContext(AuthContext)
   if (!value) {
-    throw new Error("useCurrentUser는 CurrentUserProvider 안에서만 쓸 수 있습니다.")
+    throw new Error("useAuth는 CurrentUserProvider 안에서만 쓸 수 있습니다.")
   }
   return value
+}
+
+/** 로그인된 사용자. `AuthGate` 안(보호된 화면)에서만 쓴다. */
+export function useCurrentUser() {
+  const { user, logout } = useAuth()
+  if (!user) {
+    throw new Error("로그인된 사용자가 없습니다. AuthGate 안에서만 쓸 수 있습니다.")
+  }
+  return { ...user, logout }
 }
