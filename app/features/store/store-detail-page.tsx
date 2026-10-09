@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { UserName } from "~/features/user/user-name"
+import { UserSelect } from "~/features/user/user-select"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { StoreDetail, StoreMember } from "~/lib/api/store"
 import { useCurrentUser } from "~/lib/current-user"
@@ -290,7 +292,7 @@ function StoreManagersCard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>사용자 ID</TableHead>
+                  <TableHead>사용자</TableHead>
                   <TableHead>역할</TableHead>
                   <TableHead>배정일시</TableHead>
                   <TableHead />
@@ -299,7 +301,9 @@ function StoreManagersCard({
               <TableBody>
                 {managers.map((member) => (
                   <TableRow key={member.storeMemberId}>
-                    <TableCell>{member.userId}</TableCell>
+                    <TableCell>
+                      <UserName userId={member.userId} />
+                    </TableCell>
                     <TableCell>{roleName(member.memberRole)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {member.assignedAt.replace("T", " ")}
@@ -370,16 +374,12 @@ function AssignForm({ storeId }: { storeId: number }) {
 
   return (
     <div className="flex flex-wrap items-end gap-4">
-      <div className="w-32">
-        <Label htmlFor="assign-user-id">사용자 ID</Label>
-        <Input
-          id="assign-user-id"
-          type="number"
-          min={1}
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-        />
-      </div>
+      <UserSelect
+        id="assign-user"
+        role="STORE_OWNER"
+        value={userId}
+        onChange={setUserId}
+      />
       <div className="w-40">
         <Label htmlFor="assign-member-role">역할</Label>
         <Select
