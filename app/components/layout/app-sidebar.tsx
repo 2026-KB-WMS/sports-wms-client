@@ -247,7 +247,7 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         <div className="flex flex-col gap-1 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
           <p className="truncate text-sm font-semibold">{name}</p>
           <p className="truncate text-xs text-muted-foreground">
