@@ -126,6 +126,7 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
       {showForm && (
         <SectionCreateForm
           warehouseId={warehouseId}
+          sections={sections}
           onClose={() => setShowForm(false)}
         />
       )}
@@ -263,9 +264,11 @@ function SectionTable({
 
 function SectionCreateForm({
   warehouseId,
+  sections,
   onClose,
 }: {
   warehouseId: number
+  sections: WarehouseSection[]
   onClose: () => void
 }) {
   const createSection = useCreateSection()
@@ -276,7 +279,18 @@ function SectionCreateForm({
     sectionName: "",
     sectionType: "",
     capacity: "",
+    parentSectionId: "",
   })
+
+  const activeSections = sections.filter((s) => s.isActive)
+  const parent = activeSections.find(
+    (s) => String(s.sectionId) === form.parentSectionId
+  )
+  const childrenSum = parent
+    ? activeSections
+        .filter((s) => s.parentSectionId === parent.sectionId)
+        .reduce((sum, s) => sum + (s.capacity ?? 0), 0)
+    : 0
 
   const canSubmit =
     form.sectionCode &&
@@ -294,6 +308,7 @@ function SectionCreateForm({
         sectionName: form.sectionName,
         sectionType: form.sectionType,
         capacity: Number(form.capacity),
+        parentSectionId: parent?.sectionId,
       },
       {
         onSuccess: () => {
@@ -302,6 +317,7 @@ function SectionCreateForm({
             sectionName: "",
             sectionType: "",
             capacity: "",
+            parentSectionId: "",
           })
           onClose()
         },
@@ -371,6 +387,29 @@ function SectionCreateForm({
               setForm((f) => ({ ...f, capacity: e.target.value }))
             }
           />
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="new-section-parent">상위 구역 (선택)</Label>
+          <Select
+            id="new-section-parent"
+            value={form.parentSectionId}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, parentSectionId: e.target.value }))
+            }
+          >
+            <option value="">없음 (최상위 구역)</option>
+            {activeSections.map((section) => (
+              <option key={section.sectionId} value={section.sectionId}>
+                {section.sectionCode} · {section.sectionName}
+              </option>
+            ))}
+          </Select>
+          {parent && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              상위 수용량 {parent.capacity ?? "-"} · 배정된 하위 합{" "}
+              {childrenSum}
+            </p>
+          )}
         </div>
         {createSection.isError && (
           <p className="text-sm text-destructive sm:col-span-2">
