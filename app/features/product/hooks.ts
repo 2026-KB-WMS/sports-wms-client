@@ -102,6 +102,22 @@ export function useCreateSku() {
   })
 }
 
+export function useUpdateSku() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      skuId,
+      body,
+    }: {
+      skuId: number
+      body: productApi.ProductSkuUpdateInput
+    }) => productApi.updateSku(skuId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", "skus"] })
+    },
+  })
+}
+
 export function useChangeSkuStatus() {
   const queryClient = useQueryClient()
   return useMutation({

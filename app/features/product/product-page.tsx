@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { getErrorMessage } from "~/lib/api/error-messages"
+import { useCurrentUser } from "~/lib/current-user"
 import type { ProductSummary, ProductSkuListItem } from "~/lib/api/product"
 
 import {
@@ -27,6 +28,7 @@ import {
   useProducts,
   useSkus,
 } from "./hooks"
+import { SkuEditDialog } from "./sku-edit-dialog"
 
 type Tab = "products" | "skus"
 
@@ -180,7 +182,10 @@ export function ProductPage() {
           )}
           {currentQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {getErrorMessage(currentQuery.error, "목록을 불러오지 못했습니다.")}
+              {getErrorMessage(
+                currentQuery.error,
+                "목록을 불러오지 못했습니다."
+              )}
             </p>
           )}
           {!currentQuery.isLoading &&
@@ -240,6 +245,10 @@ function ProductTable({ products }: { products: ProductSummary[] }) {
 }
 
 function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
+  const { role } = useCurrentUser()
+  const canEdit = role === "HQ_ADMIN"
+  const [editing, setEditing] = useState<ProductSkuListItem | null>(null)
+
   if (skus.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -248,56 +257,71 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
     )
   }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>SKU 코드</TableHead>
-          <TableHead>SKU명</TableHead>
-          <TableHead>상품명</TableHead>
-          <TableHead>단위</TableHead>
-          <TableHead className="text-right">매입가</TableHead>
-          <TableHead className="text-right">공급가</TableHead>
-          <TableHead className="text-right">안전재고</TableHead>
-          <TableHead>옵션</TableHead>
-          <TableHead>상태</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {skus.map((sku) => (
-          <TableRow key={sku.skuId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {sku.skuCode}
-            </TableCell>
-            <TableCell className="font-medium">{sku.skuName}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {sku.productName}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {sku.unit ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {sku.currentPurchasePrice ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {sku.currentSupplyPrice ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {sku.safetyStockQuantity ?? "-"}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {sku.optionValues.length > 0
-                ? sku.optionValues.map((option) => option.value).join(", ")
-                : "-"}
-            </TableCell>
-            <TableCell>
-              <Badge variant={sku.isActive ? "outline" : "destructive"}>
-                {sku.isActive ? "사용" : "미사용"}
-              </Badge>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>SKU 코드</TableHead>
+            <TableHead>SKU명</TableHead>
+            <TableHead>상품명</TableHead>
+            <TableHead>단위</TableHead>
+            <TableHead className="text-right">매입가</TableHead>
+            <TableHead className="text-right">공급가</TableHead>
+            <TableHead className="text-right">안전재고</TableHead>
+            <TableHead>옵션</TableHead>
+            <TableHead>상태</TableHead>
+            {canEdit && <TableHead />}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {skus.map((sku) => (
+            <TableRow key={sku.skuId}>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {sku.skuCode}
+              </TableCell>
+              <TableCell className="font-medium">{sku.skuName}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {sku.productName}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {sku.unit ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {sku.currentPurchasePrice ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {sku.currentSupplyPrice ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {sku.safetyStockQuantity ?? "-"}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {sku.optionValues.length > 0
+                  ? sku.optionValues.map((option) => option.value).join(", ")
+                  : "-"}
+              </TableCell>
+              <TableCell>
+                <Badge variant={sku.isActive ? "outline" : "destructive"}>
+                  {sku.isActive ? "사용" : "미사용"}
+                </Badge>
+              </TableCell>
+              {canEdit && (
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditing(sku)}
+                  >
+                    수정
+                  </Button>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <SkuEditDialog sku={editing} onClose={() => setEditing(null)} />
+    </>
   )
 }
 
@@ -463,7 +487,13 @@ function SkuCreateForm({
     barcode: "",
   })
 
-  const canSubmit = form.productId && form.skuCode && form.skuName
+  const isPrice = (v: string) => v !== "" && Number(v) >= 0
+  const canSubmit =
+    form.productId &&
+    form.skuCode &&
+    form.skuName &&
+    isPrice(form.currentPurchasePrice) &&
+    isPrice(form.currentSupplyPrice)
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -475,12 +505,8 @@ function SkuCreateForm({
         unit: form.unit || undefined,
         barcode: form.barcode || undefined,
         weight: form.weight ? Number(form.weight) : undefined,
-        currentPurchasePrice: form.currentPurchasePrice
-          ? Number(form.currentPurchasePrice)
-          : undefined,
-        currentSupplyPrice: form.currentSupplyPrice
-          ? Number(form.currentSupplyPrice)
-          : undefined,
+        currentPurchasePrice: Number(form.currentPurchasePrice),
+        currentSupplyPrice: Number(form.currentSupplyPrice),
         safetyStockQuantity: form.safetyStockQuantity
           ? Number(form.safetyStockQuantity)
           : undefined,
@@ -583,10 +609,11 @@ function SkuCreateForm({
           />
         </div>
         <div>
-          <Label htmlFor="new-sku-purchase">매입 단가</Label>
+          <Label htmlFor="new-sku-purchase">매입 단가 *</Label>
           <Input
             id="new-sku-purchase"
             type="number"
+            min={0}
             value={form.currentPurchasePrice}
             onChange={(e) =>
               setForm((f) => ({ ...f, currentPurchasePrice: e.target.value }))
@@ -594,10 +621,11 @@ function SkuCreateForm({
           />
         </div>
         <div>
-          <Label htmlFor="new-sku-supply">공급 단가</Label>
+          <Label htmlFor="new-sku-supply">공급 단가 *</Label>
           <Input
             id="new-sku-supply"
             type="number"
+            min={0}
             value={form.currentSupplyPrice}
             onChange={(e) =>
               setForm((f) => ({ ...f, currentSupplyPrice: e.target.value }))

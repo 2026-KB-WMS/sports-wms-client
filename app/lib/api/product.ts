@@ -144,8 +144,8 @@ export interface ProductSkuListItem {
   productName: string
   unit: string | null
   weight: number | null
-  currentPurchasePrice: number | null
-  currentSupplyPrice: number | null
+  currentPurchasePrice: number
+  currentSupplyPrice: number
   safetyStockQuantity: number | null
   isActive: boolean
   optionValues: SkuOptionValue[]
@@ -171,8 +171,8 @@ export interface ProductSkuCreateInput {
   barcode?: string | null
   skuName: string
   weight?: number | null
-  currentPurchasePrice?: number | null
-  currentSupplyPrice?: number | null
+  currentPurchasePrice: number
+  currentSupplyPrice: number
   unit?: string | null
   safetyStockQuantity?: number | null
 }
@@ -196,6 +196,24 @@ export function getSku(skuId: number) {
 export function createSku(body: ProductSkuCreateInput) {
   return apiClient.post<ProductSkuListItem & { createdAt: string }>(
     "/api/v1/products/skus",
+    body
+  )
+}
+
+/** 바뀐 필드만 보낸다(최소 1개). skuCode·productId·unit·isActive는 보내면 400이다. */
+export interface ProductSkuUpdateInput {
+  skuName?: string
+  barcode?: string
+  weight?: number
+  currentPurchasePrice?: number
+  currentSupplyPrice?: number
+  safetyStockQuantity?: number
+}
+
+/** HQ_ADMIN만 호출한다. 비활성 SKU도 수정할 수 있고, 409 DUPLICATE_BARCODE가 날 수 있다. */
+export function updateSku(skuId: number, body: ProductSkuUpdateInput) {
+  return apiClient.patch<ProductSkuListItem>(
+    `/api/v1/products/skus/${skuId}`,
     body
   )
 }
