@@ -16,6 +16,7 @@ import {
   KeyRound,
   Users,
   LogOut,
+  ChevronDown,
 } from "lucide-react"
 
 import { ChangePasswordDialog } from "~/features/auth/change-password-dialog"
@@ -30,7 +31,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "~/components/ui/sidebar"
+import { cn } from "~/lib/utils"
 import { type Role, getRoleLabel, useCurrentUser } from "~/lib/current-user"
 
 /**
@@ -40,96 +43,118 @@ import { type Role, getRoleLabel, useCurrentUser } from "~/lib/current-user"
  */
 const ALL_ROLES: Role[] = ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"]
 
-const navItems: {
+type NavItem = {
   label: string
   icon: typeof Box
   href: string
   enabled: boolean
   roles: Role[]
-}[] = [
+}
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
-    label: "개요",
-    icon: LayoutDashboard,
-    href: "/",
-    enabled: true,
-    roles: ALL_ROLES,
-  },
-  {
-    label: "상품",
-    icon: Package,
-    href: "/products",
-    enabled: true,
-    roles: ALL_ROLES,
-  },
-  {
-    label: "사용자",
-    icon: Users,
-    href: "/users",
-    enabled: true,
-    roles: ["HQ_ADMIN"],
+    label: "워크스페이스",
+    items: [
+      {
+        label: "개요",
+        icon: LayoutDashboard,
+        href: "/",
+        enabled: true,
+        roles: ALL_ROLES,
+      },
+      {
+        label: "상품",
+        icon: Package,
+        href: "/products",
+        enabled: true,
+        roles: ALL_ROLES,
+      },
+    ],
   },
   {
     label: "창고",
-    icon: Warehouse,
-    href: "/warehouses",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
-  },
-  {
-    label: "재고",
-    icon: Boxes,
-    href: "/inventory",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+    items: [
+      {
+        label: "창고",
+        icon: Warehouse,
+        href: "/warehouses",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "공급처",
+        icon: Truck,
+        href: "/suppliers",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "창고 발주",
+        icon: ClipboardList,
+        href: "/purchase-orders",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "입고",
+        icon: PackageCheck,
+        href: "/inbounds",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "재고",
+        icon: Boxes,
+        href: "/inventory",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "재고 할당",
+        icon: Layers,
+        href: "/allocations",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "출고",
+        icon: PackageOpen,
+        href: "/outbounds",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+    ],
   },
   {
     label: "지점",
-    icon: Store,
-    href: "/stores",
-    enabled: true,
-    roles: ["HQ_ADMIN", "STORE_OWNER"],
+    items: [
+      {
+        label: "지점",
+        icon: Store,
+        href: "/stores",
+        enabled: true,
+        roles: ["HQ_ADMIN", "STORE_OWNER"],
+      },
+      {
+        label: "지점 발주",
+        icon: ShoppingCart,
+        href: "/store-orders",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"],
+      },
+    ],
   },
   {
-    label: "공급처",
-    icon: Truck,
-    href: "/suppliers",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
-  },
-  {
-    label: "창고 발주",
-    icon: ClipboardList,
-    href: "/purchase-orders",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
-  },
-  {
-    label: "입고",
-    icon: PackageCheck,
-    href: "/inbounds",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
-  },
-  {
-    label: "지점 발주",
-    icon: ShoppingCart,
-    href: "/store-orders",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"],
-  },
-  {
-    label: "재고 할당",
-    icon: Layers,
-    href: "/allocations",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
-  },
-  {
-    label: "출고",
-    icon: PackageOpen,
-    href: "/outbounds",
-    enabled: true,
-    roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+    label: "관리",
+    items: [
+      {
+        label: "사용자",
+        icon: Users,
+        href: "/users",
+        enabled: true,
+        roles: ["HQ_ADMIN"],
+      },
+    ],
   },
 ]
 
@@ -137,7 +162,14 @@ export function AppSidebar() {
   const { role, name, loginId, logout } = useCurrentUser()
   const navigate = useNavigate()
   const [passwordOpen, setPasswordOpen] = useState(false)
-  const visibleItems = navItems.filter((item) => item.roles.includes(role))
+  const [closedGroups, setClosedGroups] = useState<string[]>([])
+  const { state } = useSidebar()
+  const visibleGroups = navGroups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => i.roles.includes(role)),
+    }))
+    .filter((g) => g.items.length > 0)
 
   return (
     <Sidebar collapsible="icon">
@@ -152,38 +184,68 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>워크스페이스</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleItems.map((item) =>
-                item.enabled ? (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton
-                      tooltip={item.label}
-                      render={
-                        <Link to={item.href}>
-                          <item.icon />
-                          <span>{item.label}</span>
-                        </Link>
-                      }
-                    />
-                  </SidebarMenuItem>
-                ) : (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton
-                      disabled
-                      tooltip={`${item.label} (준비 중)`}
-                    >
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {visibleGroups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel
+              render={
+                <button
+                  type="button"
+                  className="cursor-pointer justify-between hover:text-sidebar-foreground"
+                  aria-expanded={!closedGroups.includes(group.label)}
+                  onClick={() =>
+                    setClosedGroups((prev) =>
+                      prev.includes(group.label)
+                        ? prev.filter((l) => l !== group.label)
+                        : [...prev, group.label]
+                    )
+                  }
+                />
+              }
+            >
+              {group.label}
+              <ChevronDown
+                className={cn(
+                  "transition-transform",
+                  closedGroups.includes(group.label) && "-rotate-90"
+                )}
+              />
+            </SidebarGroupLabel>
+            {/* 아이콘 모드에서는 라벨이 숨겨지므로 접힘과 무관하게 항목을 보여 준다 */}
+            <SidebarGroupContent
+              hidden={
+                state === "expanded" && closedGroups.includes(group.label)
+              }
+            >
+              <SidebarMenu>
+                {group.items.map((item) =>
+                  item.enabled ? (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton
+                        tooltip={item.label}
+                        render={
+                          <Link to={item.href}>
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </Link>
+                        }
+                      />
+                    </SidebarMenuItem>
+                  ) : (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton
+                        disabled
+                        tooltip={`${item.label} (준비 중)`}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <div className="flex flex-col gap-1 px-2 py-1.5 group-data-[collapsible=icon]:hidden">
