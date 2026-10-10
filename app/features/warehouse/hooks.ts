@@ -106,6 +106,22 @@ export function useCreateSection() {
   })
 }
 
+export function useUpdateSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      sectionId,
+      body,
+    }: {
+      sectionId: number
+      body: warehouseApi.WarehouseSectionUpdateInput
+    }) => warehouseApi.updateSection(sectionId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouse", "sections"] })
+    },
+  })
+}
+
 export function useDeactivateSection() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -26,7 +26,7 @@ export interface WarehouseCreateInput {
   warehouseName: string
   address: string
   contactNumber?: string | null
-  totalCapacity?: number | null
+  totalCapacity: number
 }
 
 export interface WarehouseUpdateInput {
@@ -119,7 +119,7 @@ export interface WarehouseSectionCreateInput {
   sectionCode: string
   sectionName: string
   sectionType: string
-  capacity?: number | null
+  capacity: number
 }
 
 export interface WarehouseSectionUpdateInput {

@@ -16,6 +16,10 @@ const ERROR_GUIDES: Record<string, string> = {
   // 서버 메시지에 다음 행동이 없다
   SECTION_CAPACITY_EXCEEDED:
     "구역 수용량을 초과합니다. 다른 구역을 선택해 주세요.",
+  PARENT_CAPACITY_EXCEEDED:
+    "상위 구역(또는 창고)의 수용량을 초과합니다. 수용량을 줄이거나 상위 수용량을 먼저 늘려 주세요.",
+  CAPACITY_BELOW_CHILDREN:
+    "활성 하위 구역 수용량의 합보다 작게 줄일 수 없습니다. 하위 구역 수용량을 먼저 줄여 주세요.",
 }
 
 /** 필드별 검증 오류를 한 줄로 요약한다. (예: "quantity: 1 이상이어야 합니다")  */
