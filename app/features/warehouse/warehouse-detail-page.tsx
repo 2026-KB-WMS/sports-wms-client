@@ -19,10 +19,13 @@ import { getErrorMessage } from "~/lib/api/error-messages"
 import type { WarehouseSection } from "~/lib/api/warehouse"
 import { useCurrentUser } from "~/lib/current-user"
 
+import { CapacityEditDialog } from "./capacity-edit-dialog"
 import {
   useCreateSection,
   useSectionTypes,
   useSectionsByWarehouse,
+  useUpdateSection,
+  useUpdateWarehouse,
   useWarehouse,
 } from "./hooks"
 import { WarehouseManagersCard } from "./warehouse-managers-card"
@@ -32,6 +35,9 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
   const warehouseQuery = useWarehouse(warehouseId)
   const sectionsQuery = useSectionsByWarehouse(warehouseId)
   const [showForm, setShowForm] = useState(false)
+  const [editingWarehouse, setEditingWarehouse] = useState(false)
+  const updateWarehouse = useUpdateWarehouse()
+  const canEdit = role === "HQ_ADMIN"
 
   const warehouse = warehouseQuery.data
   const sections = sectionsQuery.data?.items ?? []
@@ -68,10 +74,40 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
             <p>
               <span className="text-muted-foreground">전체 수용량 </span>
               {warehouse.totalCapacity ?? "-"}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => setEditingWarehouse(true)}
+                >
+                  수정
+                </Button>
+              )}
             </p>
           </CardContent>
         </Card>
       )}
+
+      <CapacityEditDialog
+        target={
+          editingWarehouse && warehouse
+            ? { title: "전체 수용량 수정", current: warehouse.totalCapacity }
+            : null
+        }
+        onClose={() => {
+          setEditingWarehouse(false)
+          updateWarehouse.reset()
+        }}
+        onSave={(totalCapacity, onSuccess) =>
+          updateWarehouse.mutate(
+            { warehouseId, body: { totalCapacity } },
+            { onSuccess }
+          )
+        }
+        isPending={updateWarehouse.isPending}
+        error={updateWarehouse.error}
+      />
 
       {role === "HQ_ADMIN" && warehouse && (
         <WarehouseManagersCard
@@ -113,7 +149,7 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
             </p>
           )}
           {!sectionsQuery.isLoading && !sectionsQuery.isError && (
-            <SectionTable sections={sections} />
+            <SectionTable sections={sections} canEdit={canEdit} />
           )}
         </CardContent>
       </Card>
@@ -121,7 +157,16 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
   )
 }
 
-function SectionTable({ sections }: { sections: WarehouseSection[] }) {
+function SectionTable({
+  sections,
+  canEdit,
+}: {
+  sections: WarehouseSection[]
+  canEdit: boolean
+}) {
+  const updateSection = useUpdateSection()
+  const [editing, setEditing] = useState<WarehouseSection | null>(null)
+
   if (sections.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -130,50 +175,89 @@ function SectionTable({ sections }: { sections: WarehouseSection[] }) {
     )
   }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>구역 코드</TableHead>
-          <TableHead>구역명</TableHead>
-          <TableHead>유형</TableHead>
-          <TableHead>상위 구역</TableHead>
-          <TableHead className="text-right">수용량</TableHead>
-          <TableHead className="text-right">사용중</TableHead>
-          <TableHead className="text-right">가용</TableHead>
-          <TableHead>상태</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sections.map((section) => (
-          <TableRow key={section.sectionId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {section.sectionCode}
-            </TableCell>
-            <TableCell className="font-medium">{section.sectionName}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {section.sectionType}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {section.parentSectionCode ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {section.capacity ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {section.currentCapacity ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">
-              {section.availableCapacity ?? "-"}
-            </TableCell>
-            <TableCell>
-              <Badge variant={section.isActive ? "outline" : "destructive"}>
-                {section.isActive ? "사용" : "미사용"}
-              </Badge>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>구역 코드</TableHead>
+            <TableHead>구역명</TableHead>
+            <TableHead>유형</TableHead>
+            <TableHead>상위 구역</TableHead>
+            <TableHead className="text-right">수용량</TableHead>
+            <TableHead className="text-right">사용중</TableHead>
+            <TableHead className="text-right">가용</TableHead>
+            <TableHead>상태</TableHead>
+            {canEdit && <TableHead />}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {sections.map((section) => (
+            <TableRow key={section.sectionId}>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {section.sectionCode}
+              </TableCell>
+              <TableCell className="font-medium">
+                {section.sectionName}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {section.sectionType}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {section.parentSectionCode ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {section.capacity ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {section.currentCapacity ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">
+                {section.availableCapacity ?? "-"}
+              </TableCell>
+              <TableCell>
+                <Badge variant={section.isActive ? "outline" : "destructive"}>
+                  {section.isActive ? "사용" : "미사용"}
+                </Badge>
+              </TableCell>
+              {canEdit && (
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditing(section)}
+                  >
+                    수용량 수정
+                  </Button>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <CapacityEditDialog
+        target={
+          editing
+            ? {
+                title: `${editing.sectionName} 수용량 수정`,
+                current: editing.capacity,
+              }
+            : null
+        }
+        onClose={() => {
+          setEditing(null)
+          updateSection.reset()
+        }}
+        onSave={(capacity, onSuccess) =>
+          editing &&
+          updateSection.mutate(
+            { sectionId: editing.sectionId, body: { capacity } },
+            { onSuccess }
+          )
+        }
+        isPending={updateSection.isPending}
+        error={updateSection.error}
+      />
+    </>
   )
 }
 
@@ -194,7 +278,12 @@ function SectionCreateForm({
     capacity: "",
   })
 
-  const canSubmit = form.sectionCode && form.sectionName && form.sectionType
+  const canSubmit =
+    form.sectionCode &&
+    form.sectionName &&
+    form.sectionType &&
+    form.capacity !== "" &&
+    Number(form.capacity) >= 0
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -204,7 +293,7 @@ function SectionCreateForm({
         sectionCode: form.sectionCode,
         sectionName: form.sectionName,
         sectionType: form.sectionType,
-        capacity: form.capacity ? Number(form.capacity) : undefined,
+        capacity: Number(form.capacity),
       },
       {
         onSuccess: () => {
@@ -272,10 +361,11 @@ function SectionCreateForm({
           </Select>
         </div>
         <div>
-          <Label htmlFor="new-section-capacity">수용량</Label>
+          <Label htmlFor="new-section-capacity">수용량 *</Label>
           <Input
             id="new-section-capacity"
             type="number"
+            min={0}
             value={form.capacity}
             onChange={(e) =>
               setForm((f) => ({ ...f, capacity: e.target.value }))

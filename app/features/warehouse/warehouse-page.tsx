@@ -82,7 +82,10 @@ export function WarehousePage() {
           )}
           {warehousesQuery.isError && (
             <p className="py-8 text-center text-sm text-destructive">
-              {getErrorMessage(warehousesQuery.error, "목록을 불러오지 못했습니다.")}
+              {getErrorMessage(
+                warehousesQuery.error,
+                "목록을 불러오지 못했습니다."
+              )}
             </p>
           )}
           {!warehousesQuery.isLoading && !warehousesQuery.isError && (
@@ -164,7 +167,12 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
     totalCapacity: "",
   })
 
-  const canSubmit = form.warehouseCode && form.warehouseName && form.address
+  const canSubmit =
+    form.warehouseCode &&
+    form.warehouseName &&
+    form.address &&
+    form.totalCapacity !== "" &&
+    Number(form.totalCapacity) >= 0
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -174,9 +182,7 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
         warehouseName: form.warehouseName,
         address: form.address,
         contactNumber: form.contactNumber || undefined,
-        totalCapacity: form.totalCapacity
-          ? Number(form.totalCapacity)
-          : undefined,
+        totalCapacity: Number(form.totalCapacity),
       },
       {
         onSuccess: () => {
@@ -248,10 +254,11 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
           />
         </div>
         <div>
-          <Label htmlFor="new-warehouse-capacity">전체 수용량</Label>
+          <Label htmlFor="new-warehouse-capacity">전체 수용량 *</Label>
           <Input
             id="new-warehouse-capacity"
             type="number"
+            min={0}
             value={form.totalCapacity}
             onChange={(e) =>
               setForm((f) => ({ ...f, totalCapacity: e.target.value }))
