@@ -6,7 +6,7 @@ import type { ListData } from "./types"
  * 명세: wms-server docs/api/store-order.md, 상태 전이는 docs/domain/store-order.md
  * 날짜·시각은 오프셋 없는 KST(`YYYY-MM-DDTHH:mm:ss`).
  * 처리 사용자(등록·승인·반려·취소·배정·보류·재개·부분 종결)는 서버가 토큰에서 채운다.
- * `GET /orders/my`는 서버 미구현이라 쓰지 않는다(목록은 `GET /orders`에 storeId·warehouseId로 좁힌다).
+ * 목록은 본사 관리자만 `GET /orders`, 점주·창고 관리자는 `GET /orders/my`(서버가 담당 범위로 좁힘)다.
  */
 
 export type StoreOrderStatus =
@@ -112,15 +112,24 @@ export interface StoreOrderCreateInput {
   lines: { skuId: number; requestedQuantity: number }[]
 }
 
-export function getStoreOrders(params?: {
+export type StoreOrderListParams = {
   status?: StoreOrderStatus
   storeId?: number
   warehouseId?: number
   keyword?: string
   requestedFrom?: string
   requestedTo?: string
-}) {
+}
+
+export function getStoreOrders(params?: StoreOrderListParams) {
   return apiClient.get<ListData<StoreOrderListItem>>("/api/v1/orders", {
+    query: params,
+  })
+}
+
+/** 점주·창고 관리자용. 본사 관리자가 호출하면 403이다. */
+export function getMyStoreOrders(params?: StoreOrderListParams) {
+  return apiClient.get<ListData<StoreOrderListItem>>("/api/v1/orders/my", {
     query: params,
   })
 }

@@ -9,12 +9,17 @@ import { useCurrentUser } from "~/lib/current-user"
  */
 
 export function useStoreOrders(
-  params?: Parameters<typeof storeOrderApi.getStoreOrders>[0],
+  params?: storeOrderApi.StoreOrderListParams,
   enabled = true
 ) {
+  const { role } = useCurrentUser()
+  const isAdmin = role === "HQ_ADMIN"
   return useQuery({
-    queryKey: ["store-order", "list", params],
-    queryFn: () => storeOrderApi.getStoreOrders(params),
+    queryKey: ["store-order", "list", isAdmin ? "all" : "my", params],
+    queryFn: () =>
+      isAdmin
+        ? storeOrderApi.getStoreOrders(params)
+        : storeOrderApi.getMyStoreOrders(params),
     enabled,
   })
 }

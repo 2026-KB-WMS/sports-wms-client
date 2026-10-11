@@ -41,8 +41,8 @@ const STATUS_OPTIONS: { value: StoreOrderStatus; label: string }[] = [
 
 /**
  * 지점 발주 목록.
- * `GET /orders/my`가 서버에 없어서(인증 연동 때 구현) 역할별로 `GET /orders`를 좁혀 쓴다.
- * 점주는 본인 지점(storeId), 창고 관리자는 담당 창고(warehouseId)로 조회한다.
+ * 본사 관리자는 `GET /orders`, 점주·창고 관리자는 `GET /orders/my`(훅이 역할로 고른다).
+ * 점주는 본인 지점(storeId), 창고 관리자는 담당 창고(warehouseId)로 좁혀 조회한다.
  */
 export function StoreOrderPage() {
   const { role } = useCurrentUser()
