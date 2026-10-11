@@ -225,6 +225,10 @@ export function changeSkuStatus(skuId: number, isActive: boolean) {
   )
 }
 
+/**
+ * 본사 관리자만. 옵션 그룹당 값 1개만 연결할 수 있고(409 `OPTION_GROUP_CONFLICT`), 연결 해제 API는 없다.
+ * 이미 연결된 값은 409 `DUPLICATE_OPTION_VALUE`.
+ */
 export function connectSkuOptions(skuId: number, optionValueIds: number[]) {
   return apiClient.post<{ skuId: number; optionValues: SkuOptionValue[] }>(
     `/api/v1/products/skus/${skuId}/options`,

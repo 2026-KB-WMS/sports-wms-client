@@ -128,3 +128,43 @@ export function useChangeSkuStatus() {
     },
   })
 }
+
+export function useOptionGroupsByProduct(productId: number | null) {
+  return useQuery({
+    queryKey: ["product", "option-groups", productId],
+    queryFn: () => productApi.getOptionGroupsByProduct(productId as number),
+    enabled: productId != null,
+  })
+}
+
+export function useCreateOptionGroup() {
+  return useMutation({ mutationFn: productApi.createOptionGroup })
+}
+
+export function useCreateOptionValue() {
+  return useMutation({
+    mutationFn: ({
+      optionGroupId,
+      value,
+    }: {
+      optionGroupId: number
+      value: string
+    }) => productApi.createOptionValue(optionGroupId, value),
+  })
+}
+
+export function useConnectSkuOptions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      skuId,
+      optionValueIds,
+    }: {
+      skuId: number
+      optionValueIds: number[]
+    }) => productApi.connectSkuOptions(skuId, optionValueIds),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["product"] })
+    },
+  })
+}
