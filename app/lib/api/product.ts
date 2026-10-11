@@ -33,6 +33,19 @@ export function createBrand(body: BrandCreateInput) {
   )
 }
 
+/**
+ * 본사 관리자만. 바뀐 필드만 보낸다(최소 1개). 다른 브랜드가 쓰는 이름은 409 `DUPLICATE_BRAND_NAME`.
+ * 브랜드·카테고리 비활성화 API는 서버에 없다.
+ */
+export interface BrandUpdateInput {
+  brandName?: string
+  description?: string
+}
+
+export function updateBrand(brandId: number, body: BrandUpdateInput) {
+  return apiClient.patch<Brand>(`/api/v1/products/brands/${brandId}`, body)
+}
+
 // ── 카테고리 ──────────────────────────────────────────────
 
 export interface Category {
@@ -66,6 +79,19 @@ export function getCategories(params?: {
 
 export function createCategory(body: CategoryCreateInput) {
   return apiClient.post<Category>("/api/v1/products/categories", body)
+}
+
+/** 본사 관리자만. `categoryCode`·`parentCategoryId`는 보내면 400이다. */
+export interface CategoryUpdateInput {
+  categoryName?: string
+  sortOrder?: number
+}
+
+export function updateCategory(categoryId: number, body: CategoryUpdateInput) {
+  return apiClient.patch<Category>(
+    `/api/v1/products/categories/${categoryId}`,
+    body
+  )
 }
 
 // ── 상품 ──────────────────────────────────────────────

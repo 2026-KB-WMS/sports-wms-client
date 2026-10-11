@@ -28,10 +28,11 @@ import {
   useProducts,
   useSkus,
 } from "./hooks"
+import { BrandPanel, CategoryPanel } from "./brand-category-panels"
 import { SkuEditDialog } from "./sku-edit-dialog"
 import { SkuOptionDialog } from "./sku-option-dialog"
 
-type Tab = "products" | "skus"
+type Tab = "products" | "skus" | "brands" | "categories"
 
 /** 활성 상태 필터 값. "" = 전체. */
 type ActiveFilter = "" | "true" | "false"
@@ -87,8 +88,23 @@ export function ProductPage() {
         >
           SKU
         </Button>
+        <Button
+          variant={tab === "brands" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTab("brands")}
+        >
+          브랜드
+        </Button>
+        <Button
+          variant={tab === "categories" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setTab("categories")}
+        >
+          카테고리
+        </Button>
         <div className="ml-auto flex gap-2">
-          {tab === "products" ? (
+          {tab === "brands" || tab === "categories" ? null : tab ===
+            "products" ? (
             <Button size="sm" onClick={() => setShowProductForm((v) => !v)}>
               <Plus data-icon="inline-start" />
               상품 등록
@@ -116,87 +132,107 @@ export function ProductPage() {
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{tab === "products" ? "상품 목록" : "SKU 목록"}</CardTitle>
-          <div className="mt-3 flex flex-wrap items-end gap-4">
-            <div className="w-48">
-              <Label htmlFor="product-keyword">검색어</Label>
-              <Input
-                id="product-keyword"
-                placeholder="이름·코드 검색"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
+      {(tab === "brands" || tab === "categories") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {tab === "brands" ? "브랜드 목록" : "카테고리 목록"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {tab === "brands" ? <BrandPanel /> : <CategoryPanel />}
+          </CardContent>
+        </Card>
+      )}
+
+      {(tab === "products" || tab === "skus") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {tab === "products" ? "상품 목록" : "SKU 목록"}
+            </CardTitle>
+            <div className="mt-3 flex flex-wrap items-end gap-4">
+              <div className="w-48">
+                <Label htmlFor="product-keyword">검색어</Label>
+                <Input
+                  id="product-keyword"
+                  placeholder="이름·코드 검색"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
+              <div className="w-40">
+                <Label htmlFor="product-brand">브랜드</Label>
+                <Select
+                  id="product-brand"
+                  value={brandId}
+                  onChange={(e) => setBrandId(e.target.value)}
+                >
+                  <option value="">전체</option>
+                  {brands.map((brand) => (
+                    <option key={brand.brandId} value={brand.brandId}>
+                      {brand.brandName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="w-40">
+                <Label htmlFor="product-category">카테고리</Label>
+                <Select
+                  id="product-category"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                >
+                  <option value="">전체</option>
+                  {categories.map((category) => (
+                    <option
+                      key={category.categoryId}
+                      value={category.categoryId}
+                    >
+                      {category.categoryName}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="w-32">
+                <Label htmlFor="product-active">상태</Label>
+                <Select
+                  id="product-active"
+                  value={activeFilter}
+                  onChange={(e) =>
+                    setActiveFilter(e.target.value as ActiveFilter)
+                  }
+                >
+                  <option value="">전체</option>
+                  <option value="true">사용</option>
+                  <option value="false">미사용</option>
+                </Select>
+              </div>
             </div>
-            <div className="w-40">
-              <Label htmlFor="product-brand">브랜드</Label>
-              <Select
-                id="product-brand"
-                value={brandId}
-                onChange={(e) => setBrandId(e.target.value)}
-              >
-                <option value="">전체</option>
-                {brands.map((brand) => (
-                  <option key={brand.brandId} value={brand.brandId}>
-                    {brand.brandName}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="w-40">
-              <Label htmlFor="product-category">카테고리</Label>
-              <Select
-                id="product-category"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
-                <option value="">전체</option>
-                {categories.map((category) => (
-                  <option key={category.categoryId} value={category.categoryId}>
-                    {category.categoryName}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="w-32">
-              <Label htmlFor="product-active">상태</Label>
-              <Select
-                id="product-active"
-                value={activeFilter}
-                onChange={(e) =>
-                  setActiveFilter(e.target.value as ActiveFilter)
-                }
-              >
-                <option value="">전체</option>
-                <option value="true">사용</option>
-                <option value="false">미사용</option>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {currentQuery.isLoading && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              불러오는 중...
-            </p>
-          )}
-          {currentQuery.isError && (
-            <p className="py-8 text-center text-sm text-destructive">
-              {getErrorMessage(
-                currentQuery.error,
-                "목록을 불러오지 못했습니다."
-              )}
-            </p>
-          )}
-          {!currentQuery.isLoading &&
-            !currentQuery.isError &&
-            tab === "products" && <ProductTable products={products} />}
-          {!currentQuery.isLoading &&
-            !currentQuery.isError &&
-            tab === "skus" && <SkuTable skus={skus} />}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {currentQuery.isLoading && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                불러오는 중...
+              </p>
+            )}
+            {currentQuery.isError && (
+              <p className="py-8 text-center text-sm text-destructive">
+                {getErrorMessage(
+                  currentQuery.error,
+                  "목록을 불러오지 못했습니다."
+                )}
+              </p>
+            )}
+            {!currentQuery.isLoading &&
+              !currentQuery.isError &&
+              tab === "products" && <ProductTable products={products} />}
+            {!currentQuery.isLoading &&
+              !currentQuery.isError &&
+              tab === "skus" && <SkuTable skus={skus} />}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
