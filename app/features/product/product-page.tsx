@@ -29,6 +29,7 @@ import {
   useSkus,
 } from "./hooks"
 import { SkuEditDialog } from "./sku-edit-dialog"
+import { SkuOptionDialog } from "./sku-option-dialog"
 
 type Tab = "products" | "skus"
 
@@ -248,6 +249,9 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
   const { role } = useCurrentUser()
   const canEdit = role === "HQ_ADMIN"
   const [editing, setEditing] = useState<ProductSkuListItem | null>(null)
+  const [optionTarget, setOptionTarget] = useState<ProductSkuListItem | null>(
+    null
+  )
 
   if (skus.length === 0) {
     return (
@@ -306,13 +310,20 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
                 </Badge>
               </TableCell>
               {canEdit && (
-                <TableCell className="text-right">
+                <TableCell className="space-x-1 text-right">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setEditing(sku)}
                   >
                     수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOptionTarget(sku)}
+                  >
+                    옵션
                   </Button>
                 </TableCell>
               )}
@@ -321,6 +332,10 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
         </TableBody>
       </Table>
       <SkuEditDialog sku={editing} onClose={() => setEditing(null)} />
+      <SkuOptionDialog
+        sku={optionTarget}
+        onClose={() => setOptionTarget(null)}
+      />
     </>
   )
 }
