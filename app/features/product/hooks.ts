@@ -66,6 +66,39 @@ export function useCreateCategory() {
   })
 }
 
+export function useUpdateBrand() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      brandId,
+      body,
+    }: {
+      brandId: number
+      body: productApi.BrandUpdateInput
+    }) => productApi.updateBrand(brandId, body),
+    onSuccess: () => {
+      // 상품 목록의 브랜드명도 바뀌므로 도메인 전체를 다시 조회한다.
+      queryClient.invalidateQueries({ queryKey: ["product"] })
+    },
+  })
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      categoryId,
+      body,
+    }: {
+      categoryId: number
+      body: productApi.CategoryUpdateInput
+    }) => productApi.updateCategory(categoryId, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product"] })
+    },
+  })
+}
+
 export function useCreateProduct() {
   const queryClient = useQueryClient()
   return useMutation({
