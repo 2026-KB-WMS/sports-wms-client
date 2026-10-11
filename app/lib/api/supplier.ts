@@ -71,7 +71,14 @@ export function updateSupplier(supplierId: number, body: SupplierUpdateInput) {
   )
 }
 
-/** 단방향(재활성화 API 없음). 진행 중(REQUESTED·CONFIRMED) 발주가 있으면 409 SUPPLIER_IN_USE. */
+/** 진행 중(REQUESTED·CONFIRMED) 발주가 있으면 409 SUPPLIER_IN_USE. 되돌리기는 activateSupplier. */
+/** 본사 관리자만. 이미 ACTIVE면 409 CONFLICT. */
+export function activateSupplier(supplierId: number) {
+  return apiClient.patch<SupplierDetail>(
+    `/api/v1/suppliers/${supplierId}/activate`
+  )
+}
+
 export function deactivateSupplier(supplierId: number) {
   return apiClient.patch<SupplierDetail>(
     `/api/v1/suppliers/${supplierId}/deactivate`

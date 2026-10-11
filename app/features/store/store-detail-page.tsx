@@ -23,6 +23,7 @@ import type { StoreDetail, StoreMember } from "~/lib/api/store"
 import { useCurrentUser } from "~/lib/current-user"
 
 import {
+  useActivateStore,
   useAssignStoreManager,
   useDeactivateStore,
   useReleaseStoreManager,
@@ -66,6 +67,8 @@ function StoreInfoCard({
   const [editing, setEditing] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const deactivate = useDeactivateStore()
+  const [activateOpen, setActivateOpen] = useState(false)
+  const activate = useActivateStore()
 
   return (
     <Card>
@@ -90,6 +93,18 @@ function StoreInfoCard({
                 }}
               >
                 비활성화
+              </Button>
+            )}
+            {!store.isActive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  activate.reset()
+                  setActivateOpen(true)
+                }}
+              >
+                재활성화
               </Button>
             )}
           </div>
@@ -128,7 +143,7 @@ function StoreInfoCard({
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
         title="지점 비활성화"
-        description="비활성화하면 신규 지점 발주 등록과 점주 배정이 막히고, 다시 활성화할 수 없습니다. 진행 중인 발주가 있으면 비활성화할 수 없습니다."
+        description="비활성화하면 신규 지점 발주 등록과 점주 배정이 막힙니다. 진행 중인 발주가 있으면 비활성화할 수 없습니다."
         required={false}
         submitLabel="비활성화"
         destructive
@@ -143,6 +158,25 @@ function StoreInfoCard({
             { storeId: store.storeId, reason: reason || undefined },
             { onSuccess: () => setDeactivateOpen(false) }
           )
+        }
+      />
+
+      <ConfirmDialog
+        open={activateOpen}
+        onOpenChange={setActivateOpen}
+        title="지점 재활성화"
+        description="다시 활성화하면 신규 지점 발주 등록과 점주 배정이 가능해집니다. 기존 배정은 그대로 다시 쓰입니다."
+        confirmLabel="재활성화"
+        isPending={activate.isPending}
+        error={
+          activate.isError
+            ? getErrorMessage(activate.error, "재활성화에 실패했습니다.")
+            : null
+        }
+        onConfirm={() =>
+          activate.mutate(store.storeId, {
+            onSuccess: () => setActivateOpen(false),
+          })
         }
       />
     </Card>

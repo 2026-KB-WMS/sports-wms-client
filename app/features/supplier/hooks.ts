@@ -49,6 +49,16 @@ export function useUpdateSupplier() {
   })
 }
 
+export function useActivateSupplier() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: supplierApi.activateSupplier,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier"] })
+    },
+  })
+}
+
 export function useDeactivateSupplier() {
   const queryClient = useQueryClient()
   return useMutation({

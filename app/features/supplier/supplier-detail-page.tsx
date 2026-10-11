@@ -10,7 +10,12 @@ import { getErrorMessage } from "~/lib/api/error-messages"
 import type { SupplierDetail } from "~/lib/api/supplier"
 import { useCurrentUser } from "~/lib/current-user"
 
-import { useDeactivateSupplier, useSupplier, useUpdateSupplier } from "./hooks"
+import {
+  useActivateSupplier,
+  useDeactivateSupplier,
+  useSupplier,
+  useUpdateSupplier,
+} from "./hooks"
 
 export function SupplierDetailPage({ supplierId }: { supplierId: number }) {
   const { role } = useCurrentUser()
@@ -47,6 +52,8 @@ function SupplierInfoCard({
   const [editing, setEditing] = useState(false)
   const [deactivateOpen, setDeactivateOpen] = useState(false)
   const deactivate = useDeactivateSupplier()
+  const [activateOpen, setActivateOpen] = useState(false)
+  const activate = useActivateSupplier()
 
   return (
     <Card>
@@ -71,6 +78,18 @@ function SupplierInfoCard({
                 }}
               >
                 비활성화
+              </Button>
+            )}
+            {!supplier.isActive && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  activate.reset()
+                  setActivateOpen(true)
+                }}
+              >
+                재활성화
               </Button>
             )}
           </div>
@@ -116,7 +135,7 @@ function SupplierInfoCard({
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
         title="공급처 비활성화"
-        description="비활성화하면 신규 발주 등록이 막히고, 다시 활성화할 수 없습니다. 진행 중(요청·확정)인 발주가 있으면 비활성화할 수 없습니다."
+        description="비활성화하면 신규 발주 등록이 막히고 창고 관리자 목록에서 사라집니다. 진행 중(요청·확정)인 발주가 있으면 비활성화할 수 없습니다."
         confirmLabel="비활성화"
         destructive
         isPending={deactivate.isPending}
@@ -128,6 +147,25 @@ function SupplierInfoCard({
         onConfirm={() =>
           deactivate.mutate(supplier.supplierId, {
             onSuccess: () => setDeactivateOpen(false),
+          })
+        }
+      />
+
+      <ConfirmDialog
+        open={activateOpen}
+        onOpenChange={setActivateOpen}
+        title="공급처 재활성화"
+        description="다시 활성화하면 신규 발주 등록이 가능해지고 창고 관리자 목록에 다시 보입니다."
+        confirmLabel="재활성화"
+        isPending={activate.isPending}
+        error={
+          activate.isError
+            ? getErrorMessage(activate.error, "재활성화에 실패했습니다.")
+            : null
+        }
+        onConfirm={() =>
+          activate.mutate(supplier.supplierId, {
+            onSuccess: () => setActivateOpen(false),
           })
         }
       />
