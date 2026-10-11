@@ -78,6 +78,16 @@ export function useUpdateStore() {
   })
 }
 
+export function useActivateStore() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: storeApi.activateStore,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["store"] })
+    },
+  })
+}
+
 export function useDeactivateStore() {
   const queryClient = useQueryClient()
   return useMutation({

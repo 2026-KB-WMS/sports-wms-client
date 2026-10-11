@@ -64,12 +64,17 @@ export function updateStore(storeId: number, body: StoreUpdateInput) {
   return apiClient.patch<StoreDetail>(`/api/v1/stores/${storeId}`, body)
 }
 
-/** 단방향(재활성화 API 없음). 진행 중인 지점 발주가 있으면 409 STORE_IN_USE. */
+/** 진행 중인 지점 발주가 있으면 409 STORE_IN_USE. 되돌리기는 activateStore. */
 export function deactivateStore(storeId: number, body?: { reason?: string }) {
   return apiClient.patch<StoreDetail>(
     `/api/v1/stores/${storeId}/deactivate`,
     body
   )
+}
+
+/** 본사 관리자만. 이미 ACTIVE면 409 CONFLICT. 배정 데이터는 그대로 다시 쓰인다. */
+export function activateStore(storeId: number) {
+  return apiClient.patch<StoreDetail>(`/api/v1/stores/${storeId}/activate`)
 }
 
 /** STORE_OWNER 전용. 소속 지점은 토큰 기준이다. */
