@@ -264,3 +264,14 @@ export interface LotDetail extends LotSummary {
 export function getLot(lotId: number) {
   return apiClient.get<LotDetail>(`/api/v1/lots/${lotId}`)
 }
+
+/**
+ * 로트 상태 변경(본사 관리자만). 격리는 할당 0일 때, 해제는 유통기한 전일 때, 폐기는 보유·할당 0일 때만 가능하다.
+ * 위반하면 409 `LOT_HAS_ALLOCATION`·`LOT_HAS_STOCK`·`INVALID_LOT_STATUS_TRANSITION`. `EXPIRED`로는 바꿀 수 없다(400).
+ */
+export function changeLotStatus(
+  lotId: number,
+  body: { status: Exclude<LotStatus, "EXPIRED">; reason: string }
+) {
+  return apiClient.patch<LotSummary>(`/api/v1/lots/${lotId}/status`, body)
+}
