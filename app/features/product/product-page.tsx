@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Plus, X } from "lucide-react"
 
-import { Badge } from "~/components/ui/badge"
+import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
@@ -24,10 +24,13 @@ import {
   useBrands,
   useCategories,
   useCreateProduct,
+  useChangeSkuStatus,
   useCreateSku,
   useProducts,
   useSkus,
+  useUpdateProduct,
 } from "./hooks"
+import { ActiveToggle } from "./active-toggle"
 import { BrandPanel, CategoryPanel } from "./brand-category-panels"
 import { SkuEditDialog } from "./sku-edit-dialog"
 import { SkuOptionDialog } from "./sku-option-dialog"
@@ -238,6 +241,9 @@ export function ProductPage() {
 }
 
 function ProductTable({ products }: { products: ProductSummary[] }) {
+  const { role } = useCurrentUser()
+  const canEdit = role === "HQ_ADMIN"
+  const update = useUpdateProduct()
   if (products.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -254,6 +260,7 @@ function ProductTable({ products }: { products: ProductSummary[] }) {
           <TableHead>브랜드</TableHead>
           <TableHead>카테고리</TableHead>
           <TableHead>상태</TableHead>
+          {canEdit && <TableHead />}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -270,10 +277,31 @@ function ProductTable({ products }: { products: ProductSummary[] }) {
               {product.categoryName}
             </TableCell>
             <TableCell>
-              <Badge variant={product.isActive ? "outline" : "destructive"}>
-                {product.isActive ? "사용" : "미사용"}
-              </Badge>
+              <StatusBadge status={product.isActive ? "ACTIVE" : "INACTIVE"} />
             </TableCell>
+            {canEdit && (
+              <TableCell className="text-right">
+                <ActiveToggle
+                  kind="상품"
+                  name={product.productName}
+                  isActive={product.isActive}
+                  deactivateHint="하위 SKU가 함께 비활성화됩니다. 재고가 남아 있거나 진행 중인 입고·발주·출고가 있으면 비활성화할 수 없습니다."
+                  activateHint="상품만 다시 활성화되고, 비활성화된 SKU는 자동으로 복구되지 않습니다."
+                  isPending={update.isPending}
+                  error={update.error}
+                  reset={update.reset}
+                  run={(next, onSuccess) =>
+                    update.mutate(
+                      {
+                        productId: product.productId,
+                        body: { isActive: next },
+                      },
+                      { onSuccess }
+                    )
+                  }
+                />
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -288,6 +316,7 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
   const [optionTarget, setOptionTarget] = useState<ProductSkuListItem | null>(
     null
   )
+  const changeStatus = useChangeSkuStatus()
 
   if (skus.length === 0) {
     return (
@@ -341,9 +370,7 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
                   : "-"}
               </TableCell>
               <TableCell>
-                <Badge variant={sku.isActive ? "outline" : "destructive"}>
-                  {sku.isActive ? "사용" : "미사용"}
-                </Badge>
+                <StatusBadge status={sku.isActive ? "ACTIVE" : "INACTIVE"} />
               </TableCell>
               {canEdit && (
                 <TableCell className="space-x-1 text-right">
@@ -361,6 +388,22 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
                   >
                     옵션
                   </Button>
+                  <ActiveToggle
+                    kind="SKU"
+                    name={sku.skuName}
+                    isActive={sku.isActive}
+                    deactivateHint="재고가 남아 있거나 진행 중인 입고·발주·출고가 있으면 비활성화할 수 없습니다."
+                    activateHint="상품이 활성일 때만 재활성화할 수 있습니다."
+                    isPending={changeStatus.isPending}
+                    error={changeStatus.error}
+                    reset={changeStatus.reset}
+                    run={(next, onSuccess) =>
+                      changeStatus.mutate(
+                        { skuId: sku.skuId, isActive: next },
+                        { onSuccess }
+                      )
+                    }
+                  />
                 </TableCell>
               )}
             </TableRow>

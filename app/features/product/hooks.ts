@@ -119,8 +119,9 @@ export function useUpdateProduct() {
       productId: number
       body: productApi.ProductUpdateInput
     }) => productApi.updateProduct(productId, body),
+    // 상품 비활성화는 하위 SKU도 함께 비활성화하므로 SKU 목록까지 다시 읽는다.
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["product", "products"] })
+      queryClient.invalidateQueries({ queryKey: ["product"] })
     },
   })
 }
