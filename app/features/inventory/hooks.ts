@@ -77,3 +77,20 @@ export function useAdjustInventory() {
     },
   })
 }
+
+export function useChangeLotStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      lotId,
+      body,
+    }: {
+      lotId: number
+      body: Parameters<typeof inventoryApi.changeLotStatus>[1]
+    }) => inventoryApi.changeLotStatus(lotId, body),
+    // 409(전이 불가·수량 있음)도 상태가 바뀌었을 수 있어 settled에서 다시 조회한다.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] })
+    },
+  })
+}

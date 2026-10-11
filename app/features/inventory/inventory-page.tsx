@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { X } from "lucide-react"
 
+import { ReasonDialog } from "~/components/common/reason-dialog"
+import { StatusBadge } from "~/components/common/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -20,12 +22,14 @@ import { getRoleLabel, useCurrentUser } from "~/lib/current-user"
 import type {
   InventoryLotView,
   InventorySkuSummary,
+  LotStatus,
   LotSummary,
   LowStockItem,
 } from "~/lib/api/inventory"
 
 import {
   useAdjustInventory,
+  useChangeLotStatus,
   useInventoriesByLot,
   useInventories,
   useLots,
@@ -314,7 +318,33 @@ function ByLotTable({
   )
 }
 
+/** 현재 상태에서 가능한 전이(서버 docs/api/inventory.md). EXPIRED로의 변경은 없다. */
+const LOT_TRANSITIONS: Record<
+  LotStatus,
+  { to: "AVAILABLE" | "QUARANTINED" | "DISPOSED"; label: string }[]
+> = {
+  AVAILABLE: [
+    { to: "QUARANTINED", label: "격리" },
+    { to: "DISPOSED", label: "폐기" },
+  ],
+  QUARANTINED: [
+    { to: "AVAILABLE", label: "격리 해제" },
+    { to: "DISPOSED", label: "폐기" },
+  ],
+  EXPIRED: [{ to: "DISPOSED", label: "폐기" }],
+  DISPOSED: [],
+}
+
 function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
+  const { role } = useCurrentUser()
+  const changeStatus = useChangeLotStatus()
+  const [target, setTarget] = useState<{
+    lot: LotSummary
+    to: "AVAILABLE" | "QUARANTINED" | "DISPOSED"
+    label: string
+  } | null>(null)
+  const canChange = role === "HQ_ADMIN"
+
   const items: LotSummary[] = query.data?.items ?? []
   const state = queryState({
     isLoading: query.isLoading,
@@ -326,42 +356,89 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
   if (state) return state
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>로트 번호</TableHead>
-          <TableHead>SKU</TableHead>
-          <TableHead>제조일</TableHead>
-          <TableHead>유효기한</TableHead>
-          <TableHead>상태</TableHead>
-          <TableHead className="text-right">단가</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((lot) => (
-          <TableRow key={lot.lotId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {lot.lotNumber}
-            </TableCell>
-            <TableCell className="font-medium">{lot.skuName}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {lot.manufacturedDate ?? "-"}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {lot.expiryDate ?? "-"}
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={lot.status === "AVAILABLE" ? "outline" : "destructive"}
-              >
-                {lot.status}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-right">{lot.unitCost ?? "-"}</TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>로트 번호</TableHead>
+            <TableHead>SKU</TableHead>
+            <TableHead>제조일</TableHead>
+            <TableHead>유효기한</TableHead>
+            <TableHead>상태</TableHead>
+            <TableHead className="text-right">단가</TableHead>
+            {canChange && <TableHead />}
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {items.map((lot) => (
+            <TableRow key={lot.lotId}>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {lot.lotNumber}
+              </TableCell>
+              <TableCell className="font-medium">{lot.skuName}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {lot.manufacturedDate ?? "-"}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {lot.expiryDate ?? "-"}
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={lot.status} />
+              </TableCell>
+              <TableCell className="text-right">
+                {lot.unitCost ?? "-"}
+              </TableCell>
+              {canChange && (
+                <TableCell className="space-x-1 text-right">
+                  {LOT_TRANSITIONS[lot.status].map((t) => (
+                    <Button
+                      key={t.to}
+                      variant={t.to === "DISPOSED" ? "destructive" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        changeStatus.reset()
+                        setTarget({ lot, to: t.to, label: t.label })
+                      }}
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <ReasonDialog
+        open={target !== null}
+        onOpenChange={(open) => !open && setTarget(null)}
+        title={`로트 ${target?.label ?? ""}`}
+        description={
+          target
+            ? `${target.lot.lotNumber} (${target.lot.skuName}) 로트를 ${target.label}합니다.${
+                target.to === "DISPOSED"
+                  ? " 폐기는 되돌릴 수 없고, 보유·할당 수량이 0일 때만 가능합니다."
+                  : ""
+              }`
+            : undefined
+        }
+        submitLabel={target?.label}
+        destructive={target?.to === "DISPOSED"}
+        isPending={changeStatus.isPending}
+        error={
+          changeStatus.isError
+            ? getErrorMessage(changeStatus.error, "상태 변경에 실패했습니다.")
+            : null
+        }
+        onSubmit={(reason) => {
+          if (!target) return
+          changeStatus.mutate(
+            { lotId: target.lot.lotId, body: { status: target.to, reason } },
+            { onSuccess: () => setTarget(null) }
+          )
+        }}
+      />
+    </>
   )
 }
 
