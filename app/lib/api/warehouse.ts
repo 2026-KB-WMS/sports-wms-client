@@ -80,6 +80,13 @@ export function deactivateWarehouse(warehouseId: number) {
   )
 }
 
+/** 구역은 자동으로 활성화되지 않는다. 이미 ACTIVE면 409 `CONFLICT`. */
+export function activateWarehouse(warehouseId: number) {
+  return apiClient.patch<WarehouseDetail>(
+    `/api/v1/warehouses/${warehouseId}/activate`
+  )
+}
+
 export function getMyWarehouses() {
   return apiClient.get<ListData<WarehouseMembership>>("/api/v1/warehouses/my")
 }
@@ -182,6 +189,23 @@ export function updateSection(
 export function deactivateSection(sectionId: number) {
   return apiClient.patch<WarehouseSection>(
     `/api/v1/warehouses/sections/${sectionId}/deactivate`
+  )
+}
+
+/** 구역은 창고와 상위 구역이 활성일 때만 가능하다. 상위 수용량을 넘으면 409 `PARENT_CAPACITY_EXCEEDED`. */
+export function activateSection(sectionId: number) {
+  return apiClient.patch<WarehouseSection>(
+    `/api/v1/warehouses/sections/${sectionId}/activate`
+  )
+}
+
+/**
+ * 재고·이력·하위 구역이 전혀 없는 구역만 삭제된다. 409 `SECTION_HAS_INVENTORY`·`SECTION_HAS_CHILDREN`·
+ * `SECTION_IN_USE`(입고 이력 등이 참조)이면 비활성화를 쓴다.
+ */
+export function deleteSection(sectionId: number) {
+  return apiClient.delete<{ sectionId: number }>(
+    `/api/v1/warehouses/sections/${sectionId}`
   )
 }
 

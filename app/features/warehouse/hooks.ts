@@ -96,6 +96,36 @@ export function useDeactivateWarehouse() {
   })
 }
 
+export function useActivateWarehouse() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: warehouseApi.activateWarehouse,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouse", "warehouses"] })
+    },
+  })
+}
+
+export function useActivateSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: warehouseApi.activateSection,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouse", "sections"] })
+    },
+  })
+}
+
+export function useDeleteSection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: warehouseApi.deleteSection,
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["warehouse", "sections"] })
+    },
+  })
+}
+
 export function useCreateSection() {
   const queryClient = useQueryClient()
   return useMutation({

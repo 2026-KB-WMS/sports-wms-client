@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { Plus, X } from "lucide-react"
 
-import { Badge } from "~/components/ui/badge"
+import { ConfirmDialog } from "~/components/common/confirm-dialog"
+import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
@@ -21,7 +22,12 @@ import { useCurrentUser } from "~/lib/current-user"
 
 import { CapacityEditDialog } from "./capacity-edit-dialog"
 import {
+  useActivateSection,
+  useActivateWarehouse,
   useCreateSection,
+  useDeactivateSection,
+  useDeactivateWarehouse,
+  useDeleteSection,
   useSectionTypes,
   useSectionsByWarehouse,
   useUpdateSection,
@@ -37,6 +43,9 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
   const [showForm, setShowForm] = useState(false)
   const [editingWarehouse, setEditingWarehouse] = useState(false)
   const updateWarehouse = useUpdateWarehouse()
+  const deactivateWarehouse = useDeactivateWarehouse()
+  const activateWarehouse = useActivateWarehouse()
+  const [statusOpen, setStatusOpen] = useState(false)
   const canEdit = role === "HQ_ADMIN"
 
   const warehouse = warehouseQuery.data
@@ -49,8 +58,21 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
       )}
       {warehouse && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{warehouse.warehouseName}</CardTitle>
+            {canEdit && (
+              <Button
+                variant={warehouse.isActive ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => {
+                  deactivateWarehouse.reset()
+                  activateWarehouse.reset()
+                  setStatusOpen(true)
+                }}
+              >
+                {warehouse.isActive ? "비활성화" : "재활성화"}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
             <p>
@@ -59,9 +81,9 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
             </p>
             <p>
               <span className="text-muted-foreground">상태 </span>
-              <Badge variant={warehouse.isActive ? "outline" : "destructive"}>
-                {warehouse.isActive ? "사용" : "미사용"}
-              </Badge>
+              <StatusBadge
+                status={warehouse.isActive ? "ACTIVE" : "INACTIVE"}
+              />
             </p>
             <p className="sm:col-span-2">
               <span className="text-muted-foreground">주소 </span>
@@ -87,6 +109,38 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {warehouse && (
+        <ConfirmDialog
+          open={statusOpen}
+          onOpenChange={setStatusOpen}
+          title={warehouse.isActive ? "창고 비활성화" : "창고 재활성화"}
+          description={
+            warehouse.isActive
+              ? "비활성화하면 신규 구역 등록·관리자 배정·발주 배정이 막힙니다. 재고가 남아 있거나 진행 중인 입고·출고·발주가 있으면 비활성화할 수 없습니다."
+              : "창고를 다시 활성화합니다. 구역은 자동으로 활성화되지 않으므로 필요한 구역은 개별로 재활성화해야 합니다."
+          }
+          confirmLabel={warehouse.isActive ? "비활성화" : "재활성화"}
+          destructive={warehouse.isActive}
+          isPending={
+            deactivateWarehouse.isPending || activateWarehouse.isPending
+          }
+          error={
+            deactivateWarehouse.isError || activateWarehouse.isError
+              ? getErrorMessage(
+                  deactivateWarehouse.error ?? activateWarehouse.error,
+                  "상태 변경에 실패했습니다."
+                )
+              : null
+          }
+          onConfirm={() =>
+            (warehouse.isActive
+              ? deactivateWarehouse
+              : activateWarehouse
+            ).mutate(warehouseId, { onSuccess: () => setStatusOpen(false) })
+          }
+        />
       )}
 
       <CapacityEditDialog
@@ -166,7 +220,31 @@ function SectionTable({
   canEdit: boolean
 }) {
   const updateSection = useUpdateSection()
+  const deactivateSection = useDeactivateSection()
+  const activateSection = useActivateSection()
+  const deleteSection = useDeleteSection()
   const [editing, setEditing] = useState<WarehouseSection | null>(null)
+  const [action, setAction] = useState<{
+    section: WarehouseSection
+    kind: "deactivate" | "activate" | "delete"
+  } | null>(null)
+
+  const mutation =
+    action?.kind === "delete"
+      ? deleteSection
+      : action?.kind === "activate"
+        ? activateSection
+        : deactivateSection
+
+  function openAction(
+    section: WarehouseSection,
+    kind: "deactivate" | "activate" | "delete"
+  ) {
+    deactivateSection.reset()
+    activateSection.reset()
+    deleteSection.reset()
+    setAction({ section, kind })
+  }
 
   if (sections.length === 0) {
     return (
@@ -216,18 +294,37 @@ function SectionTable({
                 {section.availableCapacity ?? "-"}
               </TableCell>
               <TableCell>
-                <Badge variant={section.isActive ? "outline" : "destructive"}>
-                  {section.isActive ? "사용" : "미사용"}
-                </Badge>
+                <StatusBadge
+                  status={section.isActive ? "ACTIVE" : "INACTIVE"}
+                />
               </TableCell>
               {canEdit && (
-                <TableCell className="text-right">
+                <TableCell className="space-x-1 text-right">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setEditing(section)}
                   >
                     수용량 수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      openAction(
+                        section,
+                        section.isActive ? "deactivate" : "activate"
+                      )
+                    }
+                  >
+                    {section.isActive ? "비활성화" : "재활성화"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => openAction(section, "delete")}
+                  >
+                    삭제
                   </Button>
                 </TableCell>
               )}
@@ -257,6 +354,49 @@ function SectionTable({
         }
         isPending={updateSection.isPending}
         error={updateSection.error}
+      />
+      <ConfirmDialog
+        open={action !== null}
+        onOpenChange={(open) => !open && setAction(null)}
+        title={
+          action?.kind === "delete"
+            ? "구역 삭제"
+            : action?.kind === "activate"
+              ? "구역 재활성화"
+              : "구역 비활성화"
+        }
+        description={
+          action
+            ? action.kind === "delete"
+              ? action.section.sectionName +
+                " 구역을 삭제합니다. 재고·이력·하위 구역이 전혀 없는 구역만 삭제할 수 있고, 되돌릴 수 없습니다."
+              : action.kind === "activate"
+                ? action.section.sectionName +
+                  " 구역을 다시 활성화합니다. 창고와 상위 구역이 활성이어야 하고, 상위 수용량을 넘을 수 없습니다."
+                : action.section.sectionName +
+                  " 구역을 비활성화합니다. 보유·할당 수량이 남아 있거나 활성 하위 구역이 있으면 할 수 없습니다."
+            : undefined
+        }
+        confirmLabel={
+          action?.kind === "delete"
+            ? "삭제"
+            : action?.kind === "activate"
+              ? "재활성화"
+              : "비활성화"
+        }
+        destructive={action?.kind !== "activate"}
+        isPending={mutation.isPending}
+        error={
+          mutation.isError
+            ? getErrorMessage(mutation.error, "처리에 실패했습니다.")
+            : null
+        }
+        onConfirm={() =>
+          action &&
+          mutation.mutate(action.section.sectionId, {
+            onSuccess: () => setAction(null),
+          })
+        }
       />
     </>
   )
