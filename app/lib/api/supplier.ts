@@ -14,6 +14,9 @@ export interface Supplier {
   contactNumber: string
   email: string | null
   address: string | null
+  /** 지도 API로 입력하지 않은 기존 데이터는 null */
+  latitude: number | null
+  longitude: number | null
   isActive: boolean
 }
 
@@ -29,6 +32,9 @@ export interface SupplierCreateInput {
   contactNumber: string
   email?: string | null
   address?: string | null
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
 }
 
 /**
@@ -41,6 +47,9 @@ export interface SupplierUpdateInput {
   contactNumber?: string
   email?: string | null
   address?: string | null
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
 }
 
 /**

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
 import { Link } from "react-router"
 
@@ -182,6 +183,8 @@ const EMPTY_FORM = {
   contactNumber: "",
   email: "",
   address: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
 }
 
 function SupplierCreateForm({ onClose }: { onClose: () => void }) {
@@ -204,6 +207,8 @@ function SupplierCreateForm({ onClose }: { onClose: () => void }) {
         contactNumber: form.contactNumber,
         email: form.email || undefined,
         address: form.address || undefined,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
       },
       {
         onSuccess: () => {
@@ -279,11 +284,24 @@ function SupplierCreateForm({ onClose }: { onClose: () => void }) {
         </div>
         <div>
           <Label htmlFor="new-supplier-address">주소 (선택)</Label>
-          <Input
+          <AddressField
             id="new-supplier-address"
             value={form.address}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
+            onSelect={(r) =>
+              setForm((f) => ({
+                ...f,
+                address: r.address,
+                latitude: r.latitude,
+                longitude: r.longitude,
+              }))
+            }
+            onClear={() =>
+              setForm((f) => ({
+                ...f,
+                address: "",
+                latitude: null,
+                longitude: null,
+              }))
             }
           />
         </div>

@@ -11,6 +11,9 @@ export interface Warehouse {
   warehouseCode: string
   warehouseName: string
   address: string
+  /** 지도 API로 입력하지 않은 기존 데이터는 null */
+  latitude: number | null
+  longitude: number | null
   contactNumber: string | null
   totalCapacity: number | null
   isActive: boolean
@@ -25,6 +28,9 @@ export interface WarehouseCreateInput {
   warehouseCode: string
   warehouseName: string
   address: string
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
   contactNumber?: string | null
   totalCapacity: number
 }
@@ -32,6 +38,9 @@ export interface WarehouseCreateInput {
 export interface WarehouseUpdateInput {
   warehouseName?: string
   address?: string
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
   contactNumber?: string | null
   totalCapacity?: number | null
 }

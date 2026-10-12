@@ -11,6 +11,9 @@ export interface Store {
   storeCode: string
   storeName: string
   address: string
+  /** 지도 API로 입력하지 않은 기존 데이터는 null */
+  latitude: number | null
+  longitude: number | null
   contactName: string | null
   contactNumber: string
   isActive: boolean
@@ -25,6 +28,9 @@ export interface StoreCreateInput {
   storeCode: string
   storeName: string
   address: string
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
   contactName?: string | null
   contactNumber: string
 }
@@ -33,6 +39,9 @@ export interface StoreCreateInput {
 export interface StoreUpdateInput {
   storeName?: string
   address?: string
+  /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
+  latitude?: number
+  longitude?: number
   contactName?: string | null
   contactNumber?: string
 }
