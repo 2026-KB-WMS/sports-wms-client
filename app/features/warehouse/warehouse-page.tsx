@@ -19,6 +19,8 @@ import {
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { Warehouse } from "~/lib/api/warehouse"
 
+import { getPhoneError } from "~/lib/phone"
+
 import { useCreateWarehouse, useWarehouses } from "./hooks"
 
 type ActiveFilter = "" | "true" | "false"
@@ -172,7 +174,8 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
     form.warehouseName &&
     form.address &&
     form.totalCapacity !== "" &&
-    Number(form.totalCapacity) >= 0
+    Number(form.totalCapacity) >= 0 &&
+    getPhoneError(form.contactNumber) === null
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -252,6 +255,11 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
               setForm((f) => ({ ...f, contactNumber: e.target.value }))
             }
           />
+          {getPhoneError(form.contactNumber) && (
+            <p className="text-sm text-destructive">
+              {getPhoneError(form.contactNumber)}
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="new-warehouse-capacity">전체 수용량 *</Label>

@@ -19,6 +19,7 @@ import {
 import { UserName } from "~/features/user/user-name"
 import { UserSelect } from "~/features/user/user-select"
 import { getErrorMessage } from "~/lib/api/error-messages"
+import { getPhoneError } from "~/lib/phone"
 import type { StoreDetail, StoreMember } from "~/lib/api/store"
 import { useCurrentUser } from "~/lib/current-user"
 
@@ -198,7 +199,11 @@ function StoreEditForm({
     contactNumber: store.contactNumber,
   })
 
-  const canSubmit = form.storeName && form.address && form.contactNumber
+  const canSubmit =
+    form.storeName &&
+    form.address &&
+    form.contactNumber &&
+    getPhoneError(form.contactNumber) === null
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -233,11 +238,15 @@ function StoreEditForm({
         <Label htmlFor="edit-store-contact-number">연락처</Label>
         <Input
           id="edit-store-contact-number"
+          placeholder="010-1234-5678"
           value={form.contactNumber}
           onChange={(e) =>
             setForm((f) => ({ ...f, contactNumber: e.target.value }))
           }
         />
+        {getPhoneError(form.contactNumber) && (
+          <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+        )}
       </div>
       <div className="sm:col-span-2">
         <Label htmlFor="edit-store-address">주소</Label>

@@ -27,6 +27,7 @@ import { getErrorMessage } from "~/lib/api/error-messages"
 import type { UserRole, UserSummary } from "~/lib/api/user"
 import { ROLES, getRoleLabel, useCurrentUser } from "~/lib/current-user"
 import { formatDateTime } from "~/features/purchase-order/format"
+import { getPhoneError } from "~/lib/phone"
 
 import { useUpdateUser, useUsers } from "./hooks"
 
@@ -307,7 +308,8 @@ function UserEditForm({
     Object.keys(body).length > 0 &&
     name.trim() !== "" &&
     email.trim() !== "" &&
-    phone.trim() !== ""
+    phone.trim() !== "" &&
+    getPhoneError(phone) === null
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -347,6 +349,9 @@ function UserEditForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
+        {getPhoneError(phone) && (
+          <p className="text-sm text-destructive">{getPhoneError(phone)}</p>
+        )}
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="edit-role">역할</Label>

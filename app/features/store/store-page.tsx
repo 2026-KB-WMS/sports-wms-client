@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { getErrorMessage } from "~/lib/api/error-messages"
+import { getPhoneError } from "~/lib/phone"
 import type { Store } from "~/lib/api/store"
 import { useCurrentUser } from "~/lib/current-user"
 
@@ -222,7 +223,11 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState(EMPTY_FORM)
 
   const canSubmit =
-    form.storeCode && form.storeName && form.address && form.contactNumber
+    form.storeCode &&
+    form.storeName &&
+    form.address &&
+    form.contactNumber &&
+    getPhoneError(form.contactNumber) === null
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -301,11 +306,15 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
           <Label htmlFor="new-store-contact-number">연락처</Label>
           <Input
             id="new-store-contact-number"
+            placeholder="010-1234-5678"
             value={form.contactNumber}
             onChange={(e) =>
               setForm((f) => ({ ...f, contactNumber: e.target.value }))
             }
           />
+          {getPhoneError(form.contactNumber) && (
+            <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+          )}
         </div>
         {createStore.isError && (
           <p className="text-sm text-destructive sm:col-span-2">

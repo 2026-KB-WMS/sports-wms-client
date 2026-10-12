@@ -11,6 +11,8 @@ import type { SignupInput } from "~/lib/api/auth"
 import { ApiError } from "~/lib/api/client"
 import { getErrorMessage } from "~/lib/api/error-messages"
 
+import { getPhoneError } from "~/lib/phone"
+
 import { useSignup } from "./hooks"
 import { getPasswordError } from "./password-rules"
 
@@ -56,7 +58,8 @@ export function SignupPage() {
     form.password === form.passwordConfirm &&
     form.name.trim() !== "" &&
     EMAIL_PATTERN.test(form.email.trim()) &&
-    form.phone.trim() !== ""
+    form.phone.trim() !== "" &&
+    getPhoneError(form.phone) === null
 
   // 중복은 해당 필드 아래에 보여 주고, 그 밖의 오류는 폼 하단에 보여 준다.
   const errorCode =
@@ -189,11 +192,16 @@ export function SignupPage() {
                     onChange={(e) => set("email")(e.target.value)}
                   />
                 </Field>
-                <Field label="전화번호" htmlFor="phone">
+                <Field
+                  label="전화번호"
+                  htmlFor="phone"
+                  error={getPhoneError(form.phone)}
+                >
                   <Input
                     id="phone"
                     type="tel"
                     autoComplete="tel"
+                    placeholder="010-1234-5678"
                     maxLength={30}
                     value={form.phone}
                     onChange={(e) => set("phone")(e.target.value)}
