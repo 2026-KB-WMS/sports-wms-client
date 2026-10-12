@@ -81,16 +81,26 @@ export function getAllocation(allocationId: number) {
   return apiClient.get<AllocationDetail>(`/api/v1/allocations/${allocationId}`)
 }
 
+/** 재고가 모자라 일부만 할당된 SKU. 재고가 들어온 뒤 같은 요청을 다시 보내면 남은 수량을 이어서 할당한다. */
+export interface AllocationShortage {
+  skuId: number
+  requestedQuantity: number
+  allocatedQuantity: number
+  shortageQuantity: number
+}
+
 /**
- * 창고 관리자만. 발주(ASSIGNED)의 잔여 수량 전체를 FEFO로 한 번에 할당한다(all-or-nothing).
- * 부족하면 409 INSUFFICIENT_STOCK(SKU별 요청·가용 수량은 메시지에 담김).
+ * 창고 관리자만. 발주(ASSIGNED)의 잔여 수량을 FEFO로 할당한다. `skuIds`를 생략하면 발주 전체, 주면 그 SKU만(빈 배열은 400).
+ * 부분 할당: 항목별로 가용 재고만큼만 할당하고 부족분은 `shortages`로 온다.
+ * 대상 전부를 하나도 못 하면 409 INSUFFICIENT_STOCK(SKU별 요청·가용 수량은 메시지에 담김).
  */
-export function allocateStoreOrder(storeOrderId: number) {
+export function allocateStoreOrder(storeOrderId: number, skuIds?: number[]) {
   return apiClient.post<{
     storeOrderId: number
     orderNo: string
     items: Allocation[]
-  }>("/api/v1/allocations", { storeOrderId })
+    shortages: AllocationShortage[]
+  }>("/api/v1/allocations", { storeOrderId, skuIds })
 }
 
 /** 창고 관리자만. ALLOCATED → RELEASED. 출고에 묶인 할당은 409 ALLOCATION_IN_OUTBOUND. 사유 필수(≤500). */
@@ -189,10 +199,14 @@ export function getOutboundDetails(outboundId: number) {
 }
 
 /**
- * 창고 관리자만. 발주(ASSIGNED)에서 출고에 묶이지 않은 ALLOCATED 할당 전부를 묶어 READY 출고를 만든다.
- * 묶을 할당이 없으면 409 NO_ALLOCATION.
+ * 창고 관리자만. 발주(ASSIGNED)에서 출고에 묶이지 않은 ALLOCATED 할당을 묶어 READY 출고를 만든다.
+ * `skuIds`를 생략하면 전부, 주면 그 SKU의 할당만(나머지는 ALLOCATED로 남음). 묶을 할당이 없으면 409 NO_ALLOCATION.
  */
-export function createOutbound(body: { storeOrderId: number; note?: string }) {
+export function createOutbound(body: {
+  storeOrderId: number
+  note?: string
+  skuIds?: number[]
+}) {
   return apiClient.post<{
     outboundId: number
     outboundNo: string
