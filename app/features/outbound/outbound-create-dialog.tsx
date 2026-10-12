@@ -14,7 +14,8 @@ import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
 import { getErrorMessage } from "~/lib/api/error-messages"
 
-import { useCreateOutbound } from "./hooks"
+import { useAllocations, useCreateOutbound } from "./hooks"
+import { SkuSelectList, toSkuIds, type SkuOption } from "./sku-select-list"
 
 const NOTE_MAX_LENGTH = 500
 
@@ -51,15 +52,54 @@ function CreateForm({
   const create = useCreateOutbound()
   const [note, setNote] = useState("")
 
+  // 이미 출고에 묶인 할당도 섞여 있을 수 있다(목록에 연결 정보가 없음). 묶을 게 없으면 서버가 409 NO_ALLOCATION.
+  const allocations = useAllocations({ storeOrderId, status: "ALLOCATED" })
+  const bySku = new Map<number, SkuOption & { quantity: number }>()
+  for (const a of allocations.data?.items ?? []) {
+    const prev = bySku.get(a.skuId)
+    const quantity = (prev?.quantity ?? 0) + a.allocatedQuantity
+    bySku.set(a.skuId, {
+      skuId: a.skuId,
+      label: `${a.skuCode} ${a.skuName}`,
+      hint: `할당 ${quantity}`,
+      quantity,
+    })
+  }
+  const options = [...bySku.values()]
+  // null이면 전부 선택된 상태(할당 목록이 늦게 와도 기본값이 전체가 되도록)
+  const [picked, setPicked] = useState<Set<number> | null>(null)
+  const selected = picked ?? new Set(options.map((o) => o.skuId))
+
   return (
     <>
       <DialogHeader>
         <DialogTitle>출고 생성</DialogTitle>
         <DialogDescription>
-          아직 출고에 묶이지 않은 재고 할당을 모두 묶어 출고를 만듭니다. 만든
-          뒤에는 그 할당을 해제할 수 없습니다.
+          선택한 SKU의 재고 할당을 묶어 출고를 만듭니다. 선택하지 않은 SKU의
+          할당은 남아 있어 나중에 따로 출고할 수 있습니다. 만든 뒤에는 묶인
+          할당을 해제할 수 없습니다.
         </DialogDescription>
       </DialogHeader>
+      {allocations.isLoading && (
+        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+      )}
+      {allocations.isError && (
+        <p className="text-sm text-destructive">
+          {getErrorMessage(allocations.error, "재고 할당을 불러오지 못했습니다.")}
+        </p>
+      )}
+      {options.length > 0 && (
+        <SkuSelectList
+          options={options}
+          selected={selected}
+          onChange={setPicked}
+        />
+      )}
+      {allocations.isSuccess && options.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          묶을 재고 할당이 없습니다. 먼저 재고를 할당해 주세요.
+        </p>
+      )}
       <div>
         <Label htmlFor="outbound-note">비고 (선택)</Label>
         <Textarea
@@ -83,10 +123,14 @@ function CreateForm({
           취소
         </Button>
         <Button
-          disabled={create.isPending}
+          disabled={create.isPending || selected.size === 0}
           onClick={() =>
             create.mutate(
-              { storeOrderId, note: note.trim() || undefined },
+              {
+                storeOrderId,
+                note: note.trim() || undefined,
+                skuIds: toSkuIds(options, selected),
+              },
               {
                 onSuccess: (outbound) => {
                   onOpenChange(false)

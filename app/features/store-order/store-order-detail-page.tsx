@@ -16,9 +16,9 @@ import {
 } from "~/components/ui/table"
 import { formatDateTime, formatWon } from "~/features/purchase-order/format"
 import { getErrorMessage } from "~/lib/api/error-messages"
-import type { StoreOrder } from "~/lib/api/store-order"
+import type { StoreOrder, StoreOrderLine } from "~/lib/api/store-order"
+import { AllocateDialog } from "~/features/outbound/allocate-dialog"
 import { OutboundCreateDialog } from "~/features/outbound/outbound-create-dialog"
-import { useAllocateStoreOrder } from "~/features/outbound/hooks"
 import { useCurrentUser } from "~/lib/current-user"
 
 import {
@@ -55,7 +55,7 @@ export function StoreOrderDetailPage({
           {getErrorMessage(orderQuery.error, "발주를 불러오지 못했습니다.")}
         </p>
       )}
-      {order && <OrderHeaderCard order={order} />}
+      {order && <OrderHeaderCard order={order} lines={details?.items ?? []} />}
 
       {detailsQuery.isError && (
         <p className="text-sm text-destructive">
@@ -246,7 +246,13 @@ type Action =
   | "allocate"
   | "outbound"
 
-function OrderHeaderCard({ order }: { order: StoreOrder }) {
+function OrderHeaderCard({
+  order,
+  lines,
+}: {
+  order: StoreOrder
+  lines: StoreOrderLine[]
+}) {
   const { userId, role } = useCurrentUser()
   const [action, setAction] = useState<Action | null>(null)
   const approve = useApproveStoreOrder()
@@ -255,7 +261,6 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
   const hold = useHoldStoreOrder()
   const resume = useResumeStoreOrder()
   const partial = useCompletePartialStoreOrder()
-  const allocate = useAllocateStoreOrder()
 
   const isAdmin = role === "HQ_ADMIN"
   const isManager = role === "WAREHOUSE_MANAGER"
@@ -314,10 +319,7 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
           )}
           {canFulfill && (
             <>
-              <Button
-                size="sm"
-                onClick={() => open("allocate", allocate.reset)}
-              >
+              <Button size="sm" onClick={() => setAction("allocate")}>
                 재고 할당
               </Button>
               <Button
@@ -410,21 +412,11 @@ function OrderHeaderCard({ order }: { order: StoreOrder }) {
         )}
       </CardContent>
 
-      <ConfirmDialog
+      <AllocateDialog
         open={action === "allocate"}
         onOpenChange={close}
-        title="재고 할당"
-        description="발주의 남은 수량 전체를 유통기한이 빠른 재고부터(FEFO) 예약합니다. 한 항목이라도 재고가 부족하면 아무것도 할당되지 않습니다."
-        confirmLabel="할당"
-        isPending={allocate.isPending}
-        error={
-          allocate.isError
-            ? getErrorMessage(allocate.error, "할당에 실패했습니다.")
-            : null
-        }
-        onConfirm={() =>
-          allocate.mutate(id, { onSuccess: () => setAction(null) })
-        }
+        storeOrderId={id}
+        lines={lines}
       />
 
       <OutboundCreateDialog

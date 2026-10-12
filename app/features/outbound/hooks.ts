@@ -48,8 +48,13 @@ function useInvalidateFulfillment() {
 export function useAllocateStoreOrder() {
   const invalidate = useInvalidateFulfillment()
   return useMutation({
-    mutationFn: (storeOrderId: number) =>
-      outboundApi.allocateStoreOrder(storeOrderId),
+    mutationFn: ({
+      storeOrderId,
+      skuIds,
+    }: {
+      storeOrderId: number
+      skuIds?: number[]
+    }) => outboundApi.allocateStoreOrder(storeOrderId, skuIds),
     onSettled: invalidate,
   })
 }
@@ -71,7 +76,7 @@ export function useReleaseAllocation() {
 export function useCreateOutbound() {
   const invalidate = useInvalidateFulfillment()
   return useMutation({
-    mutationFn: (body: { storeOrderId: number; note?: string }) =>
+    mutationFn: (body: Parameters<typeof outboundApi.createOutbound>[0]) =>
       outboundApi.createOutbound(body),
     onSettled: invalidate,
   })
