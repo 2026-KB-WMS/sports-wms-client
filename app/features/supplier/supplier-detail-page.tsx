@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { getErrorMessage } from "~/lib/api/error-messages"
+import { getPhoneError } from "~/lib/phone"
 import type { SupplierDetail } from "~/lib/api/supplier"
 import { useCurrentUser } from "~/lib/current-user"
 
@@ -189,7 +190,11 @@ function SupplierEditForm({
     address: supplier.address ?? "",
   })
 
-  const canSubmit = form.supplierName && form.managerName && form.contactNumber
+  const canSubmit =
+    form.supplierName &&
+    form.managerName &&
+    form.contactNumber &&
+    getPhoneError(form.contactNumber) === null
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -235,11 +240,15 @@ function SupplierEditForm({
         <Label htmlFor="edit-supplier-contact">연락처</Label>
         <Input
           id="edit-supplier-contact"
+          placeholder="02-123-4567"
           value={form.contactNumber}
           onChange={(e) =>
             setForm((f) => ({ ...f, contactNumber: e.target.value }))
           }
         />
+        {getPhoneError(form.contactNumber) && (
+          <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+        )}
       </div>
       <div>
         <Label htmlFor="edit-supplier-email">이메일 (선택)</Label>
