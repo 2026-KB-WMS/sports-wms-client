@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AddressField } from "~/components/common/address-field"
 
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
@@ -188,6 +189,9 @@ function SupplierEditForm({
     contactNumber: supplier.contactNumber,
     email: supplier.email ?? "",
     address: supplier.address ?? "",
+    // 주소를 바꿀 때만 채워진다. 바꾸지 않으면 보내지 않아 서버의 기존 좌표가 유지된다.
+    latitude: null as number | null,
+    longitude: null as number | null,
   })
 
   const canSubmit =
@@ -208,6 +212,8 @@ function SupplierEditForm({
           // 비우면 null로 보내 값을 지운다.
           email: form.email || null,
           address: form.address || null,
+          latitude: form.latitude ?? undefined,
+          longitude: form.longitude ?? undefined,
         },
       },
       { onSuccess: onDone }
@@ -261,10 +267,25 @@ function SupplierEditForm({
       </div>
       <div className="sm:col-span-2">
         <Label htmlFor="edit-supplier-address">주소 (선택)</Label>
-        <Input
+        <AddressField
           id="edit-supplier-address"
           value={form.address}
-          onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+          onSelect={(r) =>
+            setForm((f) => ({
+              ...f,
+              address: r.address,
+              latitude: r.latitude,
+              longitude: r.longitude,
+            }))
+          }
+          onClear={() =>
+            setForm((f) => ({
+              ...f,
+              address: "",
+              latitude: null,
+              longitude: null,
+            }))
+          }
         />
       </div>
       {updateSupplier.isError && (

@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
 import { Link } from "react-router"
 
@@ -214,6 +215,8 @@ const EMPTY_FORM = {
   storeCode: "",
   storeName: "",
   address: "",
+  latitude: null as number | null,
+  longitude: null as number | null,
   contactName: "",
   contactNumber: "",
 }
@@ -236,6 +239,8 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
         storeCode: form.storeCode,
         storeName: form.storeName,
         address: form.address,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
         contactName: form.contactName || undefined,
         contactNumber: form.contactNumber,
       },
@@ -284,11 +289,16 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="new-store-address">주소</Label>
-          <Input
+          <AddressField
             id="new-store-address"
             value={form.address}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
+            onSelect={(r) =>
+              setForm((f) => ({
+                ...f,
+                address: r.address,
+                latitude: r.latitude,
+                longitude: r.longitude,
+              }))
             }
           />
         </div>

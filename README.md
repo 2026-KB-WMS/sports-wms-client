@@ -11,6 +11,7 @@ npm run dev        # http://localhost:5173
 
 - 백엔드(`wms-server`)는 `localhost:8080`에서 실행한다. 개발 서버가 `/api` 요청을 그쪽으로 넘겨준다(vite proxy).
 - 다른 서버를 쓰려면 `.env.example`을 `.env`로 복사해 `VITE_API_BASE_URL`을 지정한다.
+- 주소 검색(창고·지점·공급처)은 카카오 지도 JavaScript 키가 필요하다. `.env`의 `VITE_KAKAO_MAP_KEY`에 넣고, 카카오 개발자 콘솔의 플랫폼에 사이트 도메인(`http://localhost:5173` 등)을 등록한다.
 
 ## 구조
 

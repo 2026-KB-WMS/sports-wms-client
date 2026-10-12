@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
 import { Link } from "react-router"
 
@@ -165,6 +166,8 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
     warehouseCode: "",
     warehouseName: "",
     address: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
     contactNumber: "",
     totalCapacity: "",
   })
@@ -184,7 +187,9 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
         warehouseCode: form.warehouseCode,
         warehouseName: form.warehouseName,
         address: form.address,
-        contactNumber: form.contactNumber || undefined,
+        latitude: form.latitude ?? undefined,
+        longitude: form.longitude ?? undefined,
+        contactNumber: form.contactNumber.trim() || undefined,
         totalCapacity: Number(form.totalCapacity),
       },
       {
@@ -193,6 +198,8 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
             warehouseCode: "",
             warehouseName: "",
             address: "",
+            latitude: null,
+            longitude: null,
             contactNumber: "",
             totalCapacity: "",
           })
@@ -238,11 +245,16 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
         </div>
         <div className="sm:col-span-2">
           <Label htmlFor="new-warehouse-address">주소</Label>
-          <Input
+          <AddressField
             id="new-warehouse-address"
             value={form.address}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, address: e.target.value }))
+            onSelect={(r) =>
+              setForm((f) => ({
+                ...f,
+                address: r.address,
+                latitude: r.latitude,
+                longitude: r.longitude,
+              }))
             }
           />
         </div>

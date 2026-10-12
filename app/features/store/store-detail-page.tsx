@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { AddressField } from "~/components/common/address-field"
 
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { ReasonDialog } from "~/components/common/reason-dialog"
@@ -195,6 +196,9 @@ function StoreEditForm({
   const [form, setForm] = useState({
     storeName: store.storeName,
     address: store.address,
+    // 주소를 바꿀 때만 채워진다. 바꾸지 않으면 보내지 않아 서버의 기존 좌표가 유지된다.
+    latitude: null as number | null,
+    longitude: null as number | null,
     contactName: store.contactName ?? "",
     contactNumber: store.contactNumber,
   })
@@ -213,6 +217,8 @@ function StoreEditForm({
         body: {
           storeName: form.storeName,
           address: form.address,
+          latitude: form.latitude ?? undefined,
+          longitude: form.longitude ?? undefined,
           // 비우면 null로 보내 담당자명을 지운다.
           contactName: form.contactName || null,
           contactNumber: form.contactNumber,
@@ -250,10 +256,17 @@ function StoreEditForm({
       </div>
       <div className="sm:col-span-2">
         <Label htmlFor="edit-store-address">주소</Label>
-        <Input
+        <AddressField
           id="edit-store-address"
           value={form.address}
-          onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+          onSelect={(r) =>
+            setForm((f) => ({
+              ...f,
+              address: r.address,
+              latitude: r.latitude,
+              longitude: r.longitude,
+            }))
+          }
         />
       </div>
       <div>
