@@ -23,6 +23,7 @@ export interface InboundListItem {
   arrivedAt: string
   receivedAt: string | null
   receivedBy: number | null
+  receivedByName: string | null
   /** 검수 항목 수. ARRIVED면 0 */
   lineCount: number
 }
@@ -59,6 +60,7 @@ export interface InboundLine {
   inspectionNote: string | null
   receivedAt: string | null
   receivedBy: number | null
+  receivedByName: string | null
 }
 
 export interface InboundDetails {

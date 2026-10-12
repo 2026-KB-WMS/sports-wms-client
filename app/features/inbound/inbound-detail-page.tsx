@@ -179,7 +179,8 @@ function InboundHeaderCard({
         <p>
           <span className="text-muted-foreground">입고 완료 </span>
           {formatDateTime(inbound.receivedAt)}
-          {inbound.receivedBy != null && ` (사용자 #${inbound.receivedBy})`}
+          {inbound.receivedBy != null &&
+            ` (사용자 #${inbound.receivedBy}${inbound.receivedByName ? ` ${inbound.receivedByName}` : ""})`}
         </p>
         {inbound.note && (
           <p className="sm:col-span-2">

@@ -132,6 +132,7 @@ export interface OutboundListItem {
   /** 배송 시작 전에는 null */
   shippedAt: string | null
   shippedBy: number | null
+  shippedByName: string | null
   createdAt: string
 }
 
@@ -169,6 +170,7 @@ export interface OutboundDetails {
   warehouseName: string
   shippedAt: string | null
   shippedBy: number | null
+  shippedByName: string | null
   deliveredAt: string | null
   note: string | null
   /** 취소된 출고의 사유 */
