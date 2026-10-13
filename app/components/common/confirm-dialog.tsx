@@ -19,6 +19,10 @@ interface ConfirmDialogProps {
   isPending?: boolean
   /** 서버 오류 문구 (getErrorMessage 결과) */
   error?: string | null
+  /** 확인 전에 받을 추가 입력(선택 등) */
+  children?: React.ReactNode
+  /** 필수 입력이 비어 있을 때 확인을 막는다 */
+  confirmDisabled?: boolean
   onConfirm: () => void
 }
 
@@ -32,6 +36,8 @@ export function ConfirmDialog({
   destructive = false,
   isPending = false,
   error,
+  children,
+  confirmDisabled = false,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -41,6 +47,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
+        {children}
         {error && <p className="text-sm text-destructive">{error}</p>}
         <DialogFooter>
           <Button
@@ -53,7 +60,7 @@ export function ConfirmDialog({
           <Button
             variant={destructive ? "destructive" : "default"}
             onClick={onConfirm}
-            disabled={isPending}
+            disabled={isPending || confirmDisabled}
           >
             {isPending ? "처리 중..." : confirmLabel}
           </Button>

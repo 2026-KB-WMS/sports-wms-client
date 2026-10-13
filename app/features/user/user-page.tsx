@@ -29,6 +29,7 @@ import { ROLES, getRoleLabel, useCurrentUser } from "~/lib/current-user"
 import { formatDateTime } from "~/features/purchase-order/format"
 import { getPhoneError } from "~/lib/phone"
 
+import { AffiliationSelect } from "./affiliation-select"
 import { useUpdateUser, useUsers } from "./hooks"
 
 /** 승인·반려·비활성화·재활성화. 서버는 PATCH의 status 하나로 처리한다. */
@@ -40,7 +41,7 @@ const STATUS_ACTIONS: Record<
     {
       label: "승인",
       next: "ACTIVE",
-      hint: "승인하면 로그인할 수 있습니다. 창고 관리자·점주는 소속(창고·지점)을 먼저 배정해야 합니다.",
+      hint: "승인하면 로그인할 수 있습니다. 창고 관리자는 소속 창고, 점주는 소속 지점을 선택해야 합니다.",
     },
     {
       label: "반려",
@@ -61,7 +62,7 @@ const STATUS_ACTIONS: Record<
     {
       label: "재활성화",
       next: "ACTIVE",
-      hint: "창고 관리자·점주는 소속이 배정되어 있어야 합니다.",
+      hint: "창고 관리자·점주는 소속이 있어야 합니다. 이미 소속이 있으면 선택하지 않고, 없으면 창고·지점을 선택합니다.",
     },
   ],
 }
@@ -89,6 +90,8 @@ function UserList() {
   const [roleFilter, setRoleFilter] = useState<"" | UserRole>("")
   const [statusFilter, setStatusFilter] = useState<"" | UserStatus>("PENDING")
   const [pending, setPending] = useState<PendingAction | null>(null)
+  // 승인·재활성화 때 함께 지정하는 창고·지점 ID
+  const [affiliationId, setAffiliationId] = useState("")
   const [editing, setEditing] = useState<UserSummary | null>(null)
 
   const usersQuery = useUsers({
@@ -102,8 +105,15 @@ function UserList() {
   function closePending(open: boolean) {
     if (open) return
     setPending(null)
+    setAffiliationId("")
     updateUser.reset()
   }
+
+  // 소속이 필요한 역할의 승인·재활성화에서만 소속을 고른다. 이미 소속이 있으면 비워 두고 status만 보낸다.
+  const affiliationRole =
+    pending?.action.next === "ACTIVE" && pending.user.role !== "HQ_ADMIN"
+      ? pending.user.role
+      : null
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -241,6 +251,11 @@ function UserList() {
         title={`${pending?.user.name ?? ""} ${pending?.action.label ?? ""}`}
         description={pending?.action.hint}
         confirmLabel={pending?.action.label}
+        confirmDisabled={
+          pending?.user.status === "PENDING" &&
+          affiliationRole !== null &&
+          affiliationId === ""
+        }
         destructive={pending?.action.destructive}
         isPending={updateUser.isPending}
         error={
@@ -253,12 +268,27 @@ function UserList() {
           updateUser.mutate(
             {
               userId: pending.user.userId,
-              body: { status: pending.action.next },
+              body: {
+                status: pending.action.next,
+                ...(affiliationRole && affiliationId
+                  ? affiliationRole === "WAREHOUSE_MANAGER"
+                    ? { warehouseId: Number(affiliationId) }
+                    : { storeId: Number(affiliationId) }
+                  : {}),
+              },
             },
             { onSuccess: () => closePending(false) }
           )
         }
-      />
+      >
+        {affiliationRole && (
+          <AffiliationSelect
+            role={affiliationRole}
+            value={affiliationId}
+            onChange={setAffiliationId}
+          />
+        )}
+      </ConfirmDialog>
 
       <Dialog
         open={editing !== null}

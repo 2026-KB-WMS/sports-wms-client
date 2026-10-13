@@ -9,7 +9,7 @@ import { useUsers } from "./hooks"
 
 /**
  * 소속 배정용 사용자 선택. 해당 역할의 사용자를 목록으로 보여 주고 검색어로 좁힌다.
- * 서버는 비활성(INACTIVE) 사용자 배정을 거절하므로 목록에서 뺀다(승인 대기는 소속 배정 뒤 승인하므로 포함).
+ * 서버는 활성(ACTIVE) 사용자만 배정할 수 있다(승인 대기·비활성은 409). 승인 대기 사용자의 소속은 가입 승인 때 정한다.
  * `GET /users`는 본사 관리자 전용이며, 소속 배정도 본사 관리자만 한다.
  */
 export function UserSelect({
@@ -25,9 +25,9 @@ export function UserSelect({
   onChange: (userId: string) => void
 }) {
   const [keyword, setKeyword] = useState("")
-  const users = (
-    useUsers({ role, keyword: keyword || undefined }).data?.items ?? []
-  ).filter((u) => u.status !== "INACTIVE")
+  const users =
+    useUsers({ role, status: "ACTIVE", keyword: keyword || undefined }).data
+      ?.items ?? []
 
   return (
     <div className="flex flex-wrap items-end gap-4">
@@ -53,7 +53,6 @@ export function UserSelect({
           {users.map((u) => (
             <option key={u.userId} value={u.userId}>
               {u.name} ({u.loginId})
-              {u.status === "PENDING" ? " · 승인 대기" : ""}
             </option>
           ))}
         </Select>
