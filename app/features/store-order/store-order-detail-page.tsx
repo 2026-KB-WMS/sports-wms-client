@@ -218,8 +218,7 @@ export function StoreOrderDetailPage({
                       {h.reason ?? "-"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      #{h.changedBy}
-                      {h.changedByName ? ` ${h.changedByName}` : ""}
+                      {h.changedByName ?? `#${h.changedBy}`}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(h.changedAt)}
@@ -389,8 +388,7 @@ function OrderHeaderCard({
         </p>
         <p>
           <span className="text-muted-foreground">요청 </span>
-          {formatDateTime(order.requestedAt)} (사용자 #{order.createdBy}
-          {order.createdByName ? ` ${order.createdByName}` : ""})
+          {formatDateTime(order.requestedAt)} ({order.createdByName ?? `사용자 #${order.createdBy}`})
         </p>
         {order.note && (
           <p className="sm:col-span-2">

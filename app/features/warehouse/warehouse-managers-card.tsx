@@ -121,7 +121,12 @@ export function WarehouseManagersCard({
         open={releasing !== null}
         onOpenChange={(open) => !open && setReleasing(null)}
         title="배정 회수"
-        description={`사용자 ${releasing?.userId ?? ""}의 이 창고 배정을 회수합니다. 해당 사용자는 이 창고에 접근할 수 없게 됩니다.`}
+        description={
+          <>
+            {releasing && <UserName userId={releasing.userId} />}의 이 창고
+            배정을 회수합니다. 해당 사용자는 이 창고에 접근할 수 없게 됩니다.
+          </>
+        }
         confirmLabel="회수"
         destructive
         isPending={release.isPending}

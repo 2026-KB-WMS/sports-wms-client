@@ -12,7 +12,7 @@ interface ConfirmDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
-  description?: string
+  description?: React.ReactNode
   confirmLabel?: string
   /** 비활성화·삭제처럼 되돌릴 수 없는 작업이면 true */
   destructive?: boolean

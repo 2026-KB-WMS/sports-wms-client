@@ -1,4 +1,5 @@
 import { Boxes, Package, Store, Warehouse } from "lucide-react"
+import { Navigate } from "react-router"
 
 import { AppHeader } from "~/components/layout/app-header"
 import { AppSidebar } from "~/components/layout/app-sidebar"
@@ -13,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { useCurrentUser } from "~/lib/current-user"
 
 /**
  * 대시보드 집계 API가 아직 없어 카드 값은 자리표시자다.
@@ -33,6 +35,10 @@ const sampleInventory = [
 ]
 
 export default function Home() {
+  const { role } = useCurrentUser()
+  // 점주는 개요(창고·재고 현황)를 볼 수 없다. 서버 권한 기준은 아니고 화면 노출만 막는다.
+  if (role === "STORE_OWNER") return <Navigate to="/store-orders" replace />
+
   return (
     <SidebarProvider>
       <AppSidebar />

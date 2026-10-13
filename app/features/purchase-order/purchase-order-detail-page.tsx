@@ -192,8 +192,7 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
         </p>
         <p>
           <span className="text-muted-foreground">등록 </span>
-          {formatDateTime(order.createdAt)} (사용자 #{order.createdBy}
-          {order.createdByName ? ` ${order.createdByName}` : ""})
+          {formatDateTime(order.createdAt)} ({order.createdByName ?? `사용자 #${order.createdBy}`})
         </p>
         {order.note && (
           <p className="sm:col-span-2">

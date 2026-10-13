@@ -16,7 +16,7 @@ export function safeRedirectTo(value: string | null) {
  * 미인증이면 `/login?redirectTo=현재경로`로, 로그인 상태로 `/login`에 오면 `redirectTo`(없으면 홈)로 보낸다.
  */
 export function AuthGate() {
-  const { status } = useAuth()
+  const { status, loggedOut } = useAuth()
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const isPublic = PUBLIC_PATHS.includes(pathname)
@@ -24,7 +24,7 @@ export function AuthGate() {
   useEffect(() => {
     if (status === "unauthenticated" && !isPublic) {
       const redirectTo =
-        pathname === "/"
+        loggedOut || pathname === "/"
           ? ""
           : `?redirectTo=${encodeURIComponent(pathname + search)}`
       navigate(`/login${redirectTo}`, { replace: true })
@@ -33,7 +33,7 @@ export function AuthGate() {
         replace: true,
       })
     }
-  }, [status, isPublic, pathname, search, navigate])
+  }, [status, loggedOut, isPublic, pathname, search, navigate])
 
   if (status === "loading") return null
   if (isPublic ? status === "authenticated" : status !== "authenticated")

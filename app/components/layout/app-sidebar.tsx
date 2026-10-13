@@ -60,7 +60,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: LayoutDashboard,
         href: "/",
         enabled: true,
-        roles: ALL_ROLES,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
       },
       {
         label: "상품",
