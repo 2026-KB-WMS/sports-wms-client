@@ -1,9 +1,16 @@
 import { useState } from "react"
-import { Plus, X } from "lucide-react"
+import { Plus } from "lucide-react"
 
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Select } from "~/components/ui/select"
@@ -35,7 +42,17 @@ import { BrandPanel, CategoryPanel } from "./brand-category-panels"
 import { SkuEditDialog } from "./sku-edit-dialog"
 import { SkuOptionDialog } from "./sku-option-dialog"
 
+/** 단위 선택지. 서버 기본값은 EA다. 목록이 늘면 여기에 추가한다. */
+const SKU_UNITS = ["EA", "BOX"]
+
 type Tab = "products" | "skus" | "brands" | "categories"
+
+const CREATE_LABEL: Record<Tab, string> = {
+  products: "상품 등록",
+  skus: "SKU 등록",
+  brands: "브랜드 등록",
+  categories: "카테고리 등록",
+}
 
 /** 활성 상태 필터 값. "" = 전체. */
 type ActiveFilter = "" | "true" | "false"
@@ -53,6 +70,10 @@ export function ProductPage() {
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("")
   const [showProductForm, setShowProductForm] = useState(false)
   const [showSkuForm, setShowSkuForm] = useState(false)
+  const [showBrandForm, setShowBrandForm] = useState(false)
+  const [showCategoryForm, setShowCategoryForm] = useState(false)
+  const { role } = useCurrentUser()
+  const canCreate = role === "HQ_ADMIN"
 
   const brandsQuery = useBrands()
   const categoriesQuery = useCategories()
@@ -105,20 +126,22 @@ export function ProductPage() {
         >
           카테고리
         </Button>
-        <div className="ml-auto flex gap-2">
-          {tab === "brands" || tab === "categories" ? null : tab ===
-            "products" ? (
-            <Button size="sm" onClick={() => setShowProductForm((v) => !v)}>
+        {canCreate && (
+          <div className="ml-auto flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => {
+                if (tab === "products") setShowProductForm(true)
+                else if (tab === "skus") setShowSkuForm(true)
+                else if (tab === "brands") setShowBrandForm(true)
+                else setShowCategoryForm(true)
+              }}
+            >
               <Plus data-icon="inline-start" />
-              상품 등록
+              {CREATE_LABEL[tab]}
             </Button>
-          ) : (
-            <Button size="sm" onClick={() => setShowSkuForm((v) => !v)}>
-              <Plus data-icon="inline-start" />
-              SKU 등록
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {showProductForm && (
@@ -136,20 +159,36 @@ export function ProductPage() {
       )}
 
       {(tab === "brands" || tab === "categories") && (
-        <Card>
+        <Card
+          key={tab}
+          className="animate-in duration-200 fade-in-0 motion-reduce:animate-none"
+        >
           <CardHeader>
             <CardTitle>
               {tab === "brands" ? "브랜드 목록" : "카테고리 목록"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {tab === "brands" ? <BrandPanel /> : <CategoryPanel />}
+            {tab === "brands" ? (
+              <BrandPanel
+                createOpen={showBrandForm}
+                onCreateClose={() => setShowBrandForm(false)}
+              />
+            ) : (
+              <CategoryPanel
+                createOpen={showCategoryForm}
+                onCreateClose={() => setShowCategoryForm(false)}
+              />
+            )}
           </CardContent>
         </Card>
       )}
 
       {(tab === "products" || tab === "skus") && (
-        <Card>
+        <Card
+          key={tab}
+          className="animate-in duration-200 fade-in-0 motion-reduce:animate-none"
+        >
           <CardHeader>
             <CardTitle>
               {tab === "products" ? "상품 목록" : "SKU 목록"}
@@ -466,98 +505,99 @@ function ProductCreateForm({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>새 상품 등록</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onClose}
-          aria-label="닫기"
-        >
-          <X />
-        </Button>
-      </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="new-product-code">상품 코드</Label>
-          <Input
-            id="new-product-code"
-            value={form.productCode}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, productCode: e.target.value }))
-            }
-          />
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>새 상품 등록</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="new-product-code">상품 코드</Label>
+            <Input
+              id="new-product-code"
+              value={form.productCode}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, productCode: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-product-name">상품명</Label>
+            <Input
+              id="new-product-name"
+              value={form.productName}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, productName: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-product-brand">브랜드</Label>
+            <Select
+              id="new-product-brand"
+              value={form.brandId}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, brandId: e.target.value }))
+              }
+            >
+              <option value="">선택</option>
+              {brands.map((brand) => (
+                <option key={brand.brandId} value={brand.brandId}>
+                  {brand.brandName}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="new-product-category">카테고리</Label>
+            <Select
+              id="new-product-category"
+              value={form.categoryId}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, categoryId: e.target.value }))
+              }
+            >
+              <option value="">선택</option>
+              {categories.map((category) => (
+                <option key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="new-product-description">설명</Label>
+            <Textarea
+              id="new-product-description"
+              value={form.description}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, description: e.target.value }))
+              }
+            />
+          </div>
+          {createProduct.isError && (
+            <p className="text-sm text-destructive sm:col-span-2">
+              {getErrorMessage(createProduct.error, "등록에 실패했습니다.")}
+            </p>
+          )}
         </div>
-        <div>
-          <Label htmlFor="new-product-name">상품명</Label>
-          <Input
-            id="new-product-name"
-            value={form.productName}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, productName: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-product-brand">브랜드</Label>
-          <Select
-            id="new-product-brand"
-            value={form.brandId}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, brandId: e.target.value }))
-            }
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={createProduct.isPending}
           >
-            <option value="">선택</option>
-            {brands.map((brand) => (
-              <option key={brand.brandId} value={brand.brandId}>
-                {brand.brandName}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="new-product-category">카테고리</Label>
-          <Select
-            id="new-product-category"
-            value={form.categoryId}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, categoryId: e.target.value }))
-            }
-          >
-            <option value="">선택</option>
-            {categories.map((category) => (
-              <option key={category.categoryId} value={category.categoryId}>
-                {category.categoryName}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="new-product-description">설명</Label>
-          <Textarea
-            id="new-product-description"
-            value={form.description}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, description: e.target.value }))
-            }
-          />
-        </div>
-        {createProduct.isError && (
-          <p className="text-sm text-destructive sm:col-span-2">
-            {getErrorMessage(createProduct.error, "등록에 실패했습니다.")}
-          </p>
-        )}
-        <div className="sm:col-span-2">
+            취소
+          </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || createProduct.isPending}
           >
             {createProduct.isPending ? "등록 중..." : "등록"}
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -573,7 +613,7 @@ function SkuCreateForm({
     productId: "",
     skuCode: "",
     skuName: "",
-    unit: "",
+    unit: "EA",
     weight: "",
     currentPurchasePrice: "",
     currentSupplyPrice: "",
@@ -596,7 +636,7 @@ function SkuCreateForm({
         productId: Number(form.productId),
         skuCode: form.skuCode,
         skuName: form.skuName,
-        unit: form.unit || undefined,
+        unit: form.unit,
         barcode: form.barcode || undefined,
         weight: form.weight ? Number(form.weight) : undefined,
         currentPurchasePrice: Number(form.currentPurchasePrice),
@@ -611,7 +651,7 @@ function SkuCreateForm({
             productId: "",
             skuCode: "",
             skuName: "",
-            unit: "",
+            unit: "EA",
             weight: "",
             currentPurchasePrice: "",
             currentSupplyPrice: "",
@@ -625,132 +665,141 @@ function SkuCreateForm({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>새 SKU 등록</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onClose}
-          aria-label="닫기"
-        >
-          <X />
-        </Button>
-      </CardHeader>
-      <CardContent className="grid gap-4 sm:grid-cols-3">
-        <div className="sm:col-span-2">
-          <Label htmlFor="new-sku-product">상품</Label>
-          <Select
-            id="new-sku-product"
-            value={form.productId}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, productId: e.target.value }))
-            }
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>새 SKU 등록</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <Label htmlFor="new-sku-product">상품</Label>
+            <Select
+              id="new-sku-product"
+              value={form.productId}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, productId: e.target.value }))
+              }
+            >
+              <option value="">선택</option>
+              {products.map((product) => (
+                <option key={product.productId} value={product.productId}>
+                  {product.productName}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="new-sku-unit">단위</Label>
+            <Select
+              id="new-sku-unit"
+              value={form.unit}
+              onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+            >
+              {SKU_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="new-sku-code">SKU 코드</Label>
+            <Input
+              id="new-sku-code"
+              value={form.skuCode}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, skuCode: e.target.value }))
+              }
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="new-sku-name">SKU명</Label>
+            <Input
+              id="new-sku-name"
+              value={form.skuName}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, skuName: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-sku-barcode">바코드</Label>
+            <Input
+              id="new-sku-barcode"
+              value={form.barcode}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, barcode: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-sku-weight">중량</Label>
+            <Input
+              id="new-sku-weight"
+              type="number"
+              value={form.weight}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, weight: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-sku-purchase">매입 단가 *</Label>
+            <Input
+              id="new-sku-purchase"
+              type="number"
+              min={0}
+              value={form.currentPurchasePrice}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, currentPurchasePrice: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-sku-supply">공급 단가 *</Label>
+            <Input
+              id="new-sku-supply"
+              type="number"
+              min={0}
+              value={form.currentSupplyPrice}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, currentSupplyPrice: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <Label htmlFor="new-sku-safety">안전 재고</Label>
+            <Input
+              id="new-sku-safety"
+              type="number"
+              value={form.safetyStockQuantity}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, safetyStockQuantity: e.target.value }))
+              }
+            />
+          </div>
+          {createSku.isError && (
+            <p className="text-sm text-destructive sm:col-span-3">
+              {getErrorMessage(createSku.error, "등록에 실패했습니다.")}
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={createSku.isPending}
           >
-            <option value="">선택</option>
-            {products.map((product) => (
-              <option key={product.productId} value={product.productId}>
-                {product.productName}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="new-sku-unit">단위</Label>
-          <Input
-            id="new-sku-unit"
-            value={form.unit}
-            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-code">SKU 코드</Label>
-          <Input
-            id="new-sku-code"
-            value={form.skuCode}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, skuCode: e.target.value }))
-            }
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label htmlFor="new-sku-name">SKU명</Label>
-          <Input
-            id="new-sku-name"
-            value={form.skuName}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, skuName: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-barcode">바코드</Label>
-          <Input
-            id="new-sku-barcode"
-            value={form.barcode}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, barcode: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-weight">중량</Label>
-          <Input
-            id="new-sku-weight"
-            type="number"
-            value={form.weight}
-            onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))}
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-purchase">매입 단가 *</Label>
-          <Input
-            id="new-sku-purchase"
-            type="number"
-            min={0}
-            value={form.currentPurchasePrice}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, currentPurchasePrice: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-supply">공급 단가 *</Label>
-          <Input
-            id="new-sku-supply"
-            type="number"
-            min={0}
-            value={form.currentSupplyPrice}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, currentSupplyPrice: e.target.value }))
-            }
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-sku-safety">안전 재고</Label>
-          <Input
-            id="new-sku-safety"
-            type="number"
-            value={form.safetyStockQuantity}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, safetyStockQuantity: e.target.value }))
-            }
-          />
-        </div>
-        {createSku.isError && (
-          <p className="text-sm text-destructive sm:col-span-3">
-            {getErrorMessage(createSku.error, "등록에 실패했습니다.")}
-          </p>
-        )}
-        <div className="sm:col-span-3">
+            취소
+          </Button>
           <Button
             onClick={handleSubmit}
             disabled={!canSubmit || createSku.isPending}
           >
             {createSku.isPending ? "등록 중..." : "등록"}
           </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

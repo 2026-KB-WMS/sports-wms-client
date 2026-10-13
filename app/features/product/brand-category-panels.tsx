@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Plus } from "lucide-react"
 
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -44,16 +43,12 @@ type Target<T> = T | "new" | null
 
 function PanelShell({
   title,
-  canEdit,
-  onCreate,
   isLoading,
   error,
   isEmpty,
   children,
 }: {
   title: string
-  canEdit: boolean
-  onCreate: () => void
   isLoading: boolean
   error: unknown
   isEmpty: boolean
@@ -61,14 +56,6 @@ function PanelShell({
 }) {
   return (
     <div className="flex flex-col gap-4">
-      {canEdit && (
-        <div>
-          <Button size="sm" onClick={onCreate}>
-            <Plus data-icon="inline-start" />
-            {title} 등록
-          </Button>
-        </div>
-      )}
       {isLoading ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
           불러오는 중...
@@ -88,71 +75,86 @@ function PanelShell({
   )
 }
 
-export function BrandPanel() {
+/** 등록 버튼은 상품 화면 툴바에 있다. `createOpen`으로 등록 모달을 연다. */
+export function BrandPanel({
+  createOpen,
+  onCreateClose,
+}: {
+  createOpen: boolean
+  onCreateClose: () => void
+}) {
   const { role } = useCurrentUser()
   const canEdit = role === "HQ_ADMIN"
   const query = useBrands()
-  const [target, setTarget] = useState<Target<Brand>>(null)
+  const [editTarget, setEditTarget] = useState<Brand | null>(null)
+  const target: Target<Brand> = createOpen ? "new" : editTarget
+  const close = () => {
+    setEditTarget(null)
+    onCreateClose()
+  }
   const brands = query.data?.items ?? []
 
   return (
-    <PanelShell
-      title="브랜드"
-      canEdit={canEdit}
-      onCreate={() => setTarget("new")}
-      isLoading={query.isLoading}
-      error={query.error}
-      isEmpty={brands.length === 0}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>브랜드명</TableHead>
-            <TableHead>설명</TableHead>
-            <TableHead>상태</TableHead>
-            {canEdit && <TableHead />}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {brands.map((brand) => (
-            <TableRow key={brand.brandId}>
-              <TableCell className="font-medium">{brand.brandName}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {brand.description ?? "-"}
-              </TableCell>
-              <TableCell>
-                <StatusBadge status={brand.isActive ? "ACTIVE" : "INACTIVE"} />
-              </TableCell>
-              {canEdit && (
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTarget(brand)}
-                  >
-                    수정
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Dialog
-        open={target !== null}
-        onOpenChange={(open) => !open && setTarget(null)}
+    <>
+      <PanelShell
+        title="브랜드"
+        isLoading={query.isLoading}
+        error={query.error}
+        isEmpty={brands.length === 0}
       >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>코드</TableHead>
+              <TableHead>브랜드명</TableHead>
+              <TableHead>설명</TableHead>
+              <TableHead>상태</TableHead>
+              {canEdit && <TableHead />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {brands.map((brand) => (
+              <TableRow key={brand.brandId}>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {brand.brandCode ?? "-"}
+                </TableCell>
+                <TableCell className="font-medium">{brand.brandName}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {brand.description ?? "-"}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge
+                    status={brand.isActive ? "ACTIVE" : "INACTIVE"}
+                  />
+                </TableCell>
+                {canEdit && (
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditTarget(brand)}
+                    >
+                      수정
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </PanelShell>
+      <Dialog open={target !== null} onOpenChange={(open) => !open && close()}>
         <DialogContent>
           {target !== null && (
             <BrandForm
               key={target === "new" ? "new" : target.brandId}
               brand={target === "new" ? null : target}
-              onClose={() => setTarget(null)}
+              onClose={close}
             />
           )}
         </DialogContent>
       </Dialog>
-    </PanelShell>
+    </>
   )
 }
 
@@ -165,18 +167,26 @@ function BrandForm({
 }) {
   const create = useCreateBrand()
   const update = useUpdateBrand()
+  const [code, setCode] = useState("")
   const [name, setName] = useState(brand?.brandName ?? "")
   const [description, setDescription] = useState(brand?.description ?? "")
   const mutation = brand ? update : create
 
+  // 코드는 등록 때 필수이고, 코드 없는 기존 브랜드에는 한 번만 지정할 수 있다.
+  const codeEditable = brand === null || brand.brandCode === null
+  const codeValid = /^[A-Za-z]{3}$/.test(code)
   const trimmed = name.trim()
   const valid =
-    trimmed !== "" && trimmed.length <= 100 && description.length <= 500
+    trimmed !== "" &&
+    trimmed.length <= 100 &&
+    description.length <= 500 &&
+    (brand === null ? codeValid : code === "" || codeValid)
 
   // 수정은 바뀐 필드만 보낸다. 설명은 서버가 비우기를 지원하지 않아 빈 값은 보내지 않는다.
   const body: BrandUpdateInput = {}
   if (brand) {
     if (trimmed !== brand.brandName) body.brandName = trimmed
+    if (codeEditable && code !== "") body.brandCode = code
     if (description !== "" && description !== (brand.description ?? ""))
       body.description = description
   }
@@ -187,7 +197,11 @@ function BrandForm({
       update.mutate({ brandId: brand.brandId, body }, { onSuccess: onClose })
     } else {
       create.mutate(
-        { brandName: trimmed, description: description || undefined },
+        {
+          brandCode: code,
+          brandName: trimmed,
+          description: description || undefined,
+        },
         { onSuccess: onClose }
       )
     }
@@ -199,6 +213,24 @@ function BrandForm({
         <DialogTitle>{brand ? "브랜드 수정" : "브랜드 등록"}</DialogTitle>
       </DialogHeader>
       <div className="grid gap-4">
+        <div>
+          <Label htmlFor="brand-code">
+            브랜드 코드 {brand === null ? "*" : ""}
+          </Label>
+          {codeEditable ? (
+            <Input
+              id="brand-code"
+              value={code}
+              maxLength={3}
+              placeholder="영문 3자 (예: NIK)"
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+            />
+          ) : (
+            <p className="py-2 font-mono text-sm text-muted-foreground">
+              {brand?.brandCode}
+            </p>
+          )}
+        </div>
         <div>
           <Label htmlFor="brand-name">브랜드명 *</Label>
           <Input
@@ -242,87 +274,97 @@ function BrandForm({
   )
 }
 
-export function CategoryPanel() {
+export function CategoryPanel({
+  createOpen,
+  onCreateClose,
+}: {
+  createOpen: boolean
+  onCreateClose: () => void
+}) {
   const { role } = useCurrentUser()
   const canEdit = role === "HQ_ADMIN"
   const query = useCategories()
-  const [target, setTarget] = useState<Target<Category>>(null)
+  const [editTarget, setEditTarget] = useState<Category | null>(null)
+  const target: Target<Category> = createOpen ? "new" : editTarget
+  const close = () => {
+    setEditTarget(null)
+    onCreateClose()
+  }
   const categories = query.data?.items ?? []
   const nameById = new Map(
     categories.map((c) => [c.categoryId, c.categoryName])
   )
 
   return (
-    <PanelShell
-      title="카테고리"
-      canEdit={canEdit}
-      onCreate={() => setTarget("new")}
-      isLoading={query.isLoading}
-      error={query.error}
-      isEmpty={categories.length === 0}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>코드</TableHead>
-            <TableHead>카테고리명</TableHead>
-            <TableHead>상위 카테고리</TableHead>
-            <TableHead className="text-right">정렬</TableHead>
-            <TableHead>상태</TableHead>
-            {canEdit && <TableHead />}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {categories.map((category) => (
-            <TableRow key={category.categoryId}>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {category.categoryCode}
-              </TableCell>
-              <TableCell className="font-medium">
-                {category.categoryName}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {category.parentCategoryId == null
-                  ? "-"
-                  : (nameById.get(category.parentCategoryId) ?? "-")}
-              </TableCell>
-              <TableCell className="text-right">{category.sortOrder}</TableCell>
-              <TableCell>
-                <StatusBadge
-                  status={category.isActive ? "ACTIVE" : "INACTIVE"}
-                />
-              </TableCell>
-              {canEdit && (
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTarget(category)}
-                  >
-                    수정
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Dialog
-        open={target !== null}
-        onOpenChange={(open) => !open && setTarget(null)}
+    <>
+      <PanelShell
+        title="카테고리"
+        isLoading={query.isLoading}
+        error={query.error}
+        isEmpty={categories.length === 0}
       >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>코드</TableHead>
+              <TableHead>카테고리명</TableHead>
+              <TableHead>상위 카테고리</TableHead>
+              <TableHead className="text-right">정렬</TableHead>
+              <TableHead>상태</TableHead>
+              {canEdit && <TableHead />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories.map((category) => (
+              <TableRow key={category.categoryId}>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {category.categoryCode}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {category.categoryName}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {category.parentCategoryId == null
+                    ? "-"
+                    : (nameById.get(category.parentCategoryId) ?? "-")}
+                </TableCell>
+                <TableCell className="text-right">
+                  {category.sortOrder}
+                </TableCell>
+                <TableCell>
+                  <StatusBadge
+                    status={category.isActive ? "ACTIVE" : "INACTIVE"}
+                  />
+                </TableCell>
+                {canEdit && (
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditTarget(category)}
+                    >
+                      수정
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </PanelShell>
+      <Dialog open={target !== null} onOpenChange={(open) => !open && close()}>
         <DialogContent>
           {target !== null && (
             <CategoryForm
               key={target === "new" ? "new" : target.categoryId}
               category={target === "new" ? null : target}
               parents={categories.filter((c) => c.isActive)}
-              onClose={() => setTarget(null)}
+              onClose={close}
             />
           )}
         </DialogContent>
       </Dialog>
-    </PanelShell>
+    </>
   )
 }
 

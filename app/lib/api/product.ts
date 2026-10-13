@@ -10,12 +10,16 @@ import type { ListData } from "./types"
 
 export interface Brand {
   brandId: number
+  /** 코드 도입 전 브랜드는 null */
+  brandCode: string | null
   brandName: string
   description: string | null
   isActive: boolean
 }
 
 export interface BrandCreateInput {
+  /** 영문 3자. 서버가 대문자로 저장한다. */
+  brandCode: string
   brandName: string
   description?: string | null
 }
@@ -38,6 +42,8 @@ export function createBrand(body: BrandCreateInput) {
  * 브랜드·카테고리 비활성화 API는 서버에 없다.
  */
 export interface BrandUpdateInput {
+  /** 코드가 없는 기존 브랜드에 한 번만 지정할 수 있다(이미 있으면 400). */
+  brandCode?: string
   brandName?: string
   description?: string
 }
