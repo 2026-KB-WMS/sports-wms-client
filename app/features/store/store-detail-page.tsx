@@ -251,7 +251,9 @@ function StoreEditForm({
           }
         />
         {getPhoneError(form.contactNumber) && (
-          <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+          <p className="text-sm text-destructive">
+            {getPhoneError(form.contactNumber)}
+          </p>
         )}
       </div>
       <div className="sm:col-span-2">
@@ -390,7 +392,12 @@ function StoreManagersCard({
         open={releasing !== null}
         onOpenChange={(open) => !open && setReleasing(null)}
         title="배정 회수"
-        description={`사용자 ${releasing?.userId ?? ""}의 이 지점 배정을 회수합니다. 해당 사용자는 이 지점에 접근할 수 없게 됩니다.`}
+        description={
+          <>
+            {releasing && <UserName userId={releasing.userId} />}의 이 지점
+            배정을 회수합니다. 해당 사용자는 이 지점에 접근할 수 없게 됩니다.
+          </>
+        }
         confirmLabel="회수"
         destructive
         isPending={release.isPending}

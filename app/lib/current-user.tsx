@@ -46,6 +46,8 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated"
 interface AuthContextValue {
   status: AuthStatus
   user: CurrentUser | null
+  /** 사용자가 직접 로그아웃했다(세션 만료 401과 구분). 이때는 돌아갈 경로를 남기지 않는다. */
+  loggedOut: boolean
   login: (input: authApi.LoginInput) => Promise<void>
   logout: () => void
 }
@@ -66,6 +68,7 @@ export function CurrentUserProvider({
   // SSR과 첫 렌더가 같도록 loading으로 시작하고, 마운트 후 토큰을 확인한다.
   const [status, setStatus] = useState<AuthStatus>("loading")
   const [user, setUser] = useState<CurrentUser | null>(null)
+  const [loggedOut, setLoggedOut] = useState(false)
 
   const signOut = useCallback(() => {
     clearToken()
@@ -99,6 +102,11 @@ export function CurrentUserProvider({
     }
   }, [])
 
+  const logout = useCallback(() => {
+    setLoggedOut(true)
+    signOut()
+  }, [signOut])
+
   // 요청 중 토큰이 거절(401)되면 로그아웃 상태로 바꾼다.
   useEffect(() => {
     window.addEventListener(UNAUTHORIZED_EVENT, signOut)
@@ -109,6 +117,7 @@ export function CurrentUserProvider({
     async (input: authApi.LoginInput) => {
       const result = await authApi.login(input)
       setToken(result.accessToken)
+      setLoggedOut(false)
       queryClient.clear()
       setUser(toCurrentUser(result.user))
       setStatus("authenticated")
@@ -117,8 +126,8 @@ export function CurrentUserProvider({
   )
 
   const value = useMemo(
-    () => ({ status, user, login, logout: signOut }),
-    [status, user, login, signOut]
+    () => ({ status, user, loggedOut, login, logout }),
+    [status, user, loggedOut, login, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -136,7 +145,9 @@ export function useAuth() {
 export function useCurrentUser() {
   const { user, logout } = useAuth()
   if (!user) {
-    throw new Error("로그인된 사용자가 없습니다. AuthGate 안에서만 쓸 수 있습니다.")
+    throw new Error(
+      "로그인된 사용자가 없습니다. AuthGate 안에서만 쓸 수 있습니다."
+    )
   }
   return { ...user, logout }
 }

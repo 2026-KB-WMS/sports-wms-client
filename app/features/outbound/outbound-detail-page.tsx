@@ -163,7 +163,7 @@ function OutboundHeaderCard({
           <span className="text-muted-foreground">배송 시작 </span>
           {formatDateTime(outbound.shippedAt)}
           {outbound.shippedBy != null &&
-            ` (사용자 #${outbound.shippedBy}${outbound.shippedByName ? ` ${outbound.shippedByName}` : ""})`}
+            ` (${outbound.shippedByName ?? `사용자 #${outbound.shippedBy}`})`}
         </p>
         <p>
           <span className="text-muted-foreground">배송 완료 </span>
