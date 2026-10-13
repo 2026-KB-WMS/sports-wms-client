@@ -41,7 +41,6 @@ import { type Role, getRoleLabel, useCurrentUser } from "~/lib/current-user"
  * 아직 라우트가 없는 항목은 href를 "#"으로 두고 비활성 처리한다.
  * 역할별 접근 범위의 기준은 wms-server docs/api/*.md의 권한 표다.
  */
-const ALL_ROLES: Role[] = ["HQ_ADMIN", "WAREHOUSE_MANAGER", "STORE_OWNER"]
 
 type NavItem = {
   label: string
@@ -67,7 +66,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         icon: Package,
         href: "/products",
         enabled: true,
-        roles: ALL_ROLES,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
       },
     ],
   },
