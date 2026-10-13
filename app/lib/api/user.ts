@@ -35,6 +35,12 @@ export interface UserUpdateInput {
   phone?: string
   role?: UserRole
   status?: UserStatus
+  /**
+   * 승인·재활성화(status=ACTIVE)와 함께 보내면 같은 트랜잭션에서 소속을 배정한다. 창고 관리자는 warehouseId,
+   * 점주는 storeId만(둘 다·역할 불일치는 400). 이미 소속이 있으면 보내지 않는다(409 AFFILIATION_ASSIGNED).
+   */
+  warehouseId?: number
+  storeId?: number
 }
 
 /** 보낸 필드만 수정하며 최소 1개가 필요하다. 가입 승인은 status=ACTIVE다. */
