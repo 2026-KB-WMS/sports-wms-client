@@ -86,7 +86,10 @@ export function InventoryPage() {
         />
       )}
 
-      <Card>
+      <Card
+        key={tab}
+        className="animate-in duration-200 fade-in-0 motion-reduce:animate-none"
+      >
         <CardHeader>
           <CardTitle>{tabs.find((t) => t.key === tab)?.label}</CardTitle>
         </CardHeader>
