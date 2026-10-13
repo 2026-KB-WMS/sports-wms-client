@@ -163,7 +163,6 @@ function WarehouseTable({ warehouses }: { warehouses: Warehouse[] }) {
 function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
   const createWarehouse = useCreateWarehouse()
   const [form, setForm] = useState({
-    warehouseCode: "",
     warehouseName: "",
     address: "",
     latitude: null as number | null,
@@ -173,7 +172,6 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
   })
 
   const canSubmit =
-    form.warehouseCode &&
     form.warehouseName &&
     form.address &&
     form.totalCapacity !== "" &&
@@ -184,7 +182,6 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
     if (!canSubmit) return
     createWarehouse.mutate(
       {
-        warehouseCode: form.warehouseCode,
         warehouseName: form.warehouseName,
         address: form.address,
         latitude: form.latitude ?? undefined,
@@ -195,7 +192,6 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
       {
         onSuccess: () => {
           setForm({
-            warehouseCode: "",
             warehouseName: "",
             address: "",
             latitude: null,
@@ -223,16 +219,6 @@ function WarehouseCreateForm({ onClose }: { onClose: () => void }) {
         </Button>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="new-warehouse-code">창고 코드</Label>
-          <Input
-            id="new-warehouse-code"
-            value={form.warehouseCode}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, warehouseCode: e.target.value }))
-            }
-          />
-        </div>
         <div>
           <Label htmlFor="new-warehouse-name">창고명</Label>
           <Input

@@ -256,6 +256,9 @@ function StoreEditForm({
       </div>
       <div className="sm:col-span-2">
         <Label htmlFor="edit-store-address">주소</Label>
+        <p className="text-xs text-muted-foreground">
+          다른 시·도로 바꾸면 지점 코드가 새로 발급됩니다.
+        </p>
         <AddressField
           id="edit-store-address"
           value={form.address}

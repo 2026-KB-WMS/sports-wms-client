@@ -24,8 +24,8 @@ export interface StoreDetail extends Store {
   updatedAt: string
 }
 
+/** storeCode는 보내지 않는다. 서버가 주소의 시·도로 `ST-BS-002` 형식을 발급해 응답으로 준다. */
 export interface StoreCreateInput {
-  storeCode: string
   storeName: string
   address: string
   /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */

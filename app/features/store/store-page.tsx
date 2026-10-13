@@ -212,7 +212,6 @@ function StoreTable({
 }
 
 const EMPTY_FORM = {
-  storeCode: "",
   storeName: "",
   address: "",
   latitude: null as number | null,
@@ -226,7 +225,6 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState(EMPTY_FORM)
 
   const canSubmit =
-    form.storeCode &&
     form.storeName &&
     form.address &&
     form.contactNumber &&
@@ -236,7 +234,6 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
     if (!canSubmit) return
     createStore.mutate(
       {
-        storeCode: form.storeCode,
         storeName: form.storeName,
         address: form.address,
         latitude: form.latitude ?? undefined,
@@ -267,16 +264,6 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
         </Button>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="new-store-code">지점 코드</Label>
-          <Input
-            id="new-store-code"
-            value={form.storeCode}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, storeCode: e.target.value }))
-            }
-          />
-        </div>
         <div>
           <Label htmlFor="new-store-name">지점명</Label>
           <Input

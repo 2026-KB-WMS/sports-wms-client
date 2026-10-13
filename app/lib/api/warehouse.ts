@@ -24,8 +24,8 @@ export interface WarehouseDetail extends Warehouse {
   updatedAt: string
 }
 
+/** warehouseCode는 보내지 않는다. 서버가 주소의 시·도로 `WH-SU-001` 형식을 발급해 응답으로 준다. */
 export interface WarehouseCreateInput {
-  warehouseCode: string
   warehouseName: string
   address: string
   /** 주소와 함께 쌍으로만 보낸다(한쪽만 보내면 400). */
