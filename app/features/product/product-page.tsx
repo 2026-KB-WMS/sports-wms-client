@@ -34,6 +34,7 @@ import {
   useChangeSkuStatus,
   useCreateSku,
   useProducts,
+  useSkuUnits,
   useSkus,
   useUpdateProduct,
 } from "./hooks"
@@ -42,8 +43,8 @@ import { BrandPanel, CategoryPanel } from "./brand-category-panels"
 import { SkuEditDialog } from "./sku-edit-dialog"
 import { SkuOptionDialog } from "./sku-option-dialog"
 
-/** 단위 선택지. 서버 기본값은 EA다. 목록이 늘면 여기에 추가한다. */
-const SKU_UNITS = ["EA", "BOX"]
+/** 단위 목록을 받기 전에 쓰는 기본값. 서버 기본 단위는 EA다. */
+const DEFAULT_UNITS = [{ code: "EA", name: "개" }]
 
 type Tab = "products" | "skus" | "brands" | "categories"
 
@@ -609,6 +610,7 @@ function SkuCreateForm({
   onClose: () => void
 }) {
   const createSku = useCreateSku()
+  const units = useSkuUnits().data?.items ?? DEFAULT_UNITS
   const [form, setForm] = useState({
     productId: "",
     skuCode: "",
@@ -695,9 +697,9 @@ function SkuCreateForm({
               value={form.unit}
               onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             >
-              {SKU_UNITS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {unit}
+              {units.map((unit) => (
+                <option key={unit.code} value={unit.code}>
+                  {unit.code} ({unit.name})
                 </option>
               ))}
             </Select>

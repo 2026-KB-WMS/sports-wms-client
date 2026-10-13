@@ -221,6 +221,16 @@ export function getSkus(params?: {
   })
 }
 
+export interface SkuUnit {
+  code: string
+  name: string
+}
+
+/** 등록 요청의 `unit`에는 `code`를 보낸다(EA·BOX·SET). 목록 밖 값은 400이다. */
+export function getSkuUnits() {
+  return apiClient.get<ListData<SkuUnit>>("/api/v1/products/skus/units")
+}
+
 export function getSku(skuId: number) {
   return apiClient.get<ProductSkuDetail>(`/api/v1/products/skus/${skuId}`)
 }

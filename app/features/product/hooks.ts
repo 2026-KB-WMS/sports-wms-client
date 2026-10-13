@@ -46,6 +46,14 @@ export function useSkus(params?: Parameters<typeof productApi.getSkus>[0]) {
   })
 }
 
+export function useSkuUnits() {
+  return useQuery({
+    queryKey: ["product", "sku-units"],
+    queryFn: productApi.getSkuUnits,
+    staleTime: Infinity,
+  })
+}
+
 export function useCreateBrand() {
   const queryClient = useQueryClient()
   return useMutation({
