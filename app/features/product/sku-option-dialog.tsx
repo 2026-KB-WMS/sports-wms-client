@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "~/components/ui/button"
 import {
@@ -9,20 +9,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog"
-import { Input } from "~/components/ui/input"
-import { Label } from "~/components/ui/label"
-import { Select } from "~/components/ui/select"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { ProductSkuListItem } from "~/lib/api/product"
 
-import {
-  useConnectSkuOptions,
-  useCreateOptionGroup,
-  useCreateOptionValue,
-  useOptionGroupsByProduct,
-} from "./hooks"
-
-const NEW = "new"
+import { useConnectSkuOptions, useProduct } from "./hooks"
+import { OptionSelects, useOptionSelection } from "./option-select"
 
 /** sku가 있을 때만 폼이 마운트되어 열릴 때마다 입력값이 초기화된다. */
 export function SkuOptionDialog({
@@ -41,6 +32,7 @@ export function SkuOptionDialog({
   )
 }
 
+/** 옵션이 없는 기존 SKU에 한 번만 연결한다. 새 SKU는 SKU 등록에서 옵션을 함께 고른다. */
 function SkuOptionForm({
   sku,
   onClose,
@@ -48,50 +40,22 @@ function SkuOptionForm({
   sku: ProductSkuListItem
   onClose: () => void
 }) {
-  const groupsQuery = useOptionGroupsByProduct(sku.productId)
-  const createGroup = useCreateOptionGroup()
-  const createValue = useCreateOptionValue()
+  const productQuery = useProduct(sku.productId)
+  const option = useOptionSelection(
+    productQuery.data?.categoryId ?? null,
+    "SKU"
+  )
   const connect = useConnectSkuOptions()
-  const groups = groupsQuery.data?.items ?? []
-
-  const [groupSel, setGroupSel] = useState(NEW)
-  const [groupName, setGroupName] = useState("")
-  const [valueSel, setValueSel] = useState(NEW)
-  const [valueText, setValueText] = useState("")
   const [error, setError] = useState<string | null>(null)
-  // 그룹은 만들었는데 값 등록·연결이 실패한 경우, 재시도 때 같은 그룹을 다시 만들지 않는다.
-  const created = useRef<{ name: string; groupId: number } | null>(null)
-
-  const group = groups.find((g) => String(g.optionGroupId) === groupSel)
-  const isNewGroup = group == null
-  const isNewValue = isNewGroup || valueSel === NEW
-  const name = groupName.trim()
-  const text = valueText.trim()
-  const canSubmit = (!isNewGroup || name !== "") && (!isNewValue || text !== "")
-  const pending =
-    createGroup.isPending || createValue.isPending || connect.isPending
+  const loading = productQuery.isLoading || option.isLoading
 
   async function handleSubmit() {
     setError(null)
     try {
-      let groupId = group?.optionGroupId
-      if (groupId == null) {
-        if (created.current?.name === name) {
-          groupId = created.current.groupId
-        } else {
-          groupId = (await createGroup.mutateAsync(name)).optionGroupId
-          created.current = { name, groupId }
-        }
-      }
-      const valueId = isNewValue
-        ? (
-            await createValue.mutateAsync({
-              optionGroupId: groupId,
-              value: text,
-            })
-          ).optionValueId
-        : Number(valueSel)
-      await connect.mutateAsync({ skuId: sku.skuId, optionValueIds: [valueId] })
+      await connect.mutateAsync({
+        skuId: sku.skuId,
+        optionValueIds: option.ids,
+      })
       onClose()
     } catch (e) {
       setError(getErrorMessage(e, "옵션 연결에 실패했습니다."))
@@ -103,76 +67,41 @@ function SkuOptionForm({
       <DialogHeader>
         <DialogTitle>옵션 연결 · {sku.skuName}</DialogTitle>
         <DialogDescription>
-          옵션 그룹당 값 1개만 연결할 수 있고, 연결한 옵션은 해제할 수 없습니다.
-          {sku.optionValues.length > 0 &&
-            ` 현재: ${sku.optionValues
-              .map((o) => `${o.optionGroupName} ${o.value}`)
-              .join(", ")}`}
+          옵션이 없는 SKU에 한 번만 연결할 수 있고, 연결한 옵션은 해제할 수
+          없습니다. 상품 카테고리에 지정된 SKU 옵션을 모두 골라야 합니다.
         </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4">
-        <div>
-          <Label htmlFor="option-group">옵션 그룹</Label>
-          <Select
-            id="option-group"
-            value={groupSel}
-            onChange={(e) => {
-              setGroupSel(e.target.value)
-              setValueSel(NEW)
-            }}
-          >
-            <option value={NEW}>새 그룹 만들기</option>
-            {groups.map((g) => (
-              <option key={g.optionGroupId} value={g.optionGroupId}>
-                {g.name}
-              </option>
-            ))}
-          </Select>
-          {isNewGroup && (
-            <Input
-              className="mt-2"
-              placeholder="새 그룹명 (예: 사이즈)"
-              maxLength={100}
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-            />
-          )}
-        </div>
-        <div>
-          <Label htmlFor="option-value">옵션 값</Label>
-          {group && (
-            <Select
-              id="option-value"
-              value={valueSel}
-              onChange={(e) => setValueSel(e.target.value)}
-            >
-              <option value={NEW}>새 값 만들기</option>
-              {group.values.map((v) => (
-                <option key={v.optionValueId} value={v.optionValueId}>
-                  {v.value}
-                </option>
-              ))}
-            </Select>
-          )}
-          {isNewValue && (
-            <Input
-              id={group ? undefined : "option-value"}
-              className="mt-2"
-              placeholder="새 값 (예: 270)"
-              maxLength={100}
-              value={valueText}
-              onChange={(e) => setValueText(e.target.value)}
-            />
-          )}
-        </div>
+        {loading && (
+          <p className="text-sm text-muted-foreground">불러오는 중...</p>
+        )}
+        {!loading && option.groups.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            이 상품의 카테고리에 지정된 SKU 옵션이 없습니다. 카테고리 탭에서
+            옵션 그룹을 지정해 주세요.
+          </p>
+        )}
+        <OptionSelects state={option} idPrefix="sku-option" />
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={onClose} disabled={pending}>
+        <Button
+          variant="outline"
+          onClick={onClose}
+          disabled={connect.isPending}
+        >
           취소
         </Button>
-        <Button onClick={handleSubmit} disabled={!canSubmit || pending}>
-          {pending ? "처리 중..." : "연결"}
+        <Button
+          onClick={handleSubmit}
+          disabled={
+            loading ||
+            option.groups.length === 0 ||
+            !option.complete ||
+            connect.isPending
+          }
+        >
+          {connect.isPending ? "처리 중..." : "연결"}
         </Button>
       </DialogFooter>
     </>
