@@ -133,7 +133,7 @@ export interface ProductDetail extends ProductSummary {
 export interface ProductCreateInput {
   brandId: number
   categoryId: number
-  productCode: string
+  /** 상품 코드는 서버가 `브랜드코드-카테고리코드-일련번호`로 발급한다(보내지 않는다). */
   productName: string
   description?: string | null
   /** 카테고리에 SPEC으로 지정된 옵션 그룹마다 값 하나씩. 지정된 그룹이 없으면 생략한다. */
@@ -214,11 +214,8 @@ export interface ProductSkuDetail extends Omit<
 
 export interface ProductSkuCreateInput {
   productId: number
-  /** 비우면 서버가 `상품코드-옵션코드…`로 만든다. 코드 없는 옵션 값을 고르면 직접 입력해야 한다. */
-  skuCode?: string
+  /** `skuCode`·`skuName`은 서버가 옵션 코드·값으로 만든다(보내지 않는다). 이름만 등록 후 수정할 수 있다. */
   barcode?: string | null
-  /** 비우면 서버가 `상품명 (옵션값/옵션값)`으로 만든다. */
-  skuName?: string
   weight?: number | null
   currentPurchasePrice: number
   currentSupplyPrice: number

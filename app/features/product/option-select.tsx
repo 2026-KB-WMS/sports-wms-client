@@ -30,14 +30,7 @@ export function useOptionSelection(
     isLoading: query.isLoading,
     ids,
     complete: !query.isLoading && ids.length === groups.length,
-    /** 고른 값 중 코드가 없는 것이 있으면 SKU 코드를 자동 생성할 수 없다. */
-    uncoded: groups.some((g) =>
-      g.values.some(
-        (v) =>
-          v.optionCode == null &&
-          String(v.optionValueId) === selection[g.optionGroupId]
-      )
-    ),
+    type,
   }
 }
 
@@ -67,7 +60,10 @@ export function OptionSelects({
       >
         <option value="">선택</option>
         {group.values
-          .filter((v) => v.isActive)
+          // SKU 코드는 옵션 코드로 만들어지므로 코드가 없는 이전 값은 고를 수 없다.
+          .filter(
+            (v) => v.isActive && (state.type === "SPEC" || v.optionCode != null)
+          )
           .map((v) => (
             <option key={v.optionValueId} value={v.optionValueId}>
               {v.optionCode ? `${v.value} (${v.optionCode})` : v.value}

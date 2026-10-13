@@ -467,7 +467,7 @@ function ProductCreateForm({
   categories,
   onClose,
 }: {
-  brands: { brandId: number; brandName: string }[]
+  brands: { brandId: number; brandName: string; brandCode: string | null }[]
   categories: { categoryId: number; categoryName: string }[]
   onClose: () => void
 }) {
@@ -475,10 +475,14 @@ function ProductCreateForm({
   const [form, setForm] = useState({
     brandId: "",
     categoryId: "",
-    productCode: "",
     productName: "",
     description: "",
   })
+  const [issuedCode, setIssuedCode] = useState<string | null>(null)
+  // 상품 코드는 브랜드 코드로 만들어지므로 코드가 없는 기존 브랜드는 쓸 수 없다.
+  const brandNoCode =
+    form.brandId !== "" &&
+    brands.find((b) => String(b.brandId) === form.brandId)?.brandCode == null
   const spec = useOptionSelection(
     form.categoryId ? Number(form.categoryId) : null,
     "SPEC"
@@ -486,8 +490,8 @@ function ProductCreateForm({
 
   const canSubmit =
     form.brandId &&
+    !brandNoCode &&
     form.categoryId &&
-    form.productCode &&
     form.productName &&
     spec.complete
 
@@ -497,24 +501,32 @@ function ProductCreateForm({
       {
         brandId: Number(form.brandId),
         categoryId: Number(form.categoryId),
-        productCode: form.productCode,
         productName: form.productName,
         description: form.description || undefined,
         specOptionValueIds: spec.groups.length > 0 ? spec.ids : undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (product) => {
           spec.reset()
           setForm({
             brandId: "",
             categoryId: "",
-            productCode: "",
             productName: "",
             description: "",
           })
-          onClose()
+          setIssuedCode(product.productCode)
         },
       }
+    )
+  }
+
+  if (issuedCode) {
+    return (
+      <IssuedDialog
+        title="상품을 등록했습니다"
+        rows={[["상품 코드", issuedCode]]}
+        onClose={onClose}
+      />
     )
   }
 
@@ -525,17 +537,7 @@ function ProductCreateForm({
           <DialogTitle>새 상품 등록</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="new-product-code">상품 코드</Label>
-            <Input
-              id="new-product-code"
-              value={form.productCode}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, productCode: e.target.value }))
-              }
-            />
-          </div>
-          <div>
+          <div className="sm:col-span-2">
             <Label htmlFor="new-product-name">상품명</Label>
             <Input
               id="new-product-name"
@@ -558,9 +560,16 @@ function ProductCreateForm({
               {brands.map((brand) => (
                 <option key={brand.brandId} value={brand.brandId}>
                   {brand.brandName}
+                  {brand.brandCode == null && " (코드 없음)"}
                 </option>
               ))}
             </Select>
+            {brandNoCode && (
+              <p className="mt-1 text-xs text-destructive">
+                브랜드 코드가 없어 상품을 등록할 수 없습니다. 브랜드 탭에서
+                코드를 먼저 지정해 주세요.
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="new-product-category">카테고리</Label>
@@ -598,6 +607,9 @@ function ProductCreateForm({
               }
             />
           </div>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            상품 코드는 등록하면 서버가 발급합니다.
+          </p>
           {createProduct.isError && (
             <p className="text-sm text-destructive sm:col-span-2">
               {getErrorMessage(createProduct.error, "등록에 실패했습니다.")}
@@ -635,8 +647,6 @@ function SkuCreateForm({
   const units = useSkuUnits().data?.items ?? DEFAULT_UNITS
   const [form, setForm] = useState({
     productId: "",
-    skuCode: "",
-    skuName: "",
     unit: "EA",
     weight: "",
     currentPurchasePrice: "",
@@ -644,17 +654,18 @@ function SkuCreateForm({
     safetyStockQuantity: "",
     barcode: "",
   })
+  const [issued, setIssued] = useState<{ code: string; name: string } | null>(
+    null
+  )
   const categoryId =
     products.find((p) => String(p.productId) === form.productId)?.categoryId ??
     null
   const option = useOptionSelection(categoryId, "SKU")
 
   const isPrice = (v: string) => v !== "" && Number(v) >= 0
-  // 코드 없는 옵션 값(이전에 만든 값)을 고르면 서버가 SKU 코드를 만들 수 없다.
   const canSubmit =
     form.productId &&
     option.complete &&
-    (!option.uncoded || form.skuCode) &&
     isPrice(form.currentPurchasePrice) &&
     isPrice(form.currentSupplyPrice)
 
@@ -663,8 +674,6 @@ function SkuCreateForm({
     createSku.mutate(
       {
         productId: Number(form.productId),
-        skuCode: form.skuCode || undefined,
-        skuName: form.skuName || undefined,
         optionValueIds: option.groups.length > 0 ? option.ids : undefined,
         unit: form.unit,
         barcode: form.barcode || undefined,
@@ -676,12 +685,10 @@ function SkuCreateForm({
           : undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (sku) => {
           option.reset()
           setForm({
             productId: "",
-            skuCode: "",
-            skuName: "",
             unit: "EA",
             weight: "",
             currentPurchasePrice: "",
@@ -689,9 +696,22 @@ function SkuCreateForm({
             safetyStockQuantity: "",
             barcode: "",
           })
-          onClose()
+          setIssued({ code: sku.skuCode, name: sku.skuName })
         },
       }
+    )
+  }
+
+  if (issued) {
+    return (
+      <IssuedDialog
+        title="SKU를 등록했습니다"
+        rows={[
+          ["SKU 코드", issued.code],
+          ["SKU명", issued.name],
+        ]}
+        onClose={onClose}
+      />
     )
   }
 
@@ -734,30 +754,6 @@ function SkuCreateForm({
             </Select>
           </div>
           <OptionSelects state={option} idPrefix="new-sku-option" />
-          <div>
-            <Label htmlFor="new-sku-code">
-              SKU 코드{option.uncoded && " *"}
-            </Label>
-            <Input
-              id="new-sku-code"
-              placeholder={option.uncoded ? undefined : "비우면 자동 생성"}
-              value={form.skuCode}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, skuCode: e.target.value }))
-              }
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Label htmlFor="new-sku-name">SKU명</Label>
-            <Input
-              id="new-sku-name"
-              placeholder="비우면 자동 생성"
-              value={form.skuName}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, skuName: e.target.value }))
-              }
-            />
-          </div>
           <div>
             <Label htmlFor="new-sku-barcode">바코드</Label>
             <Input
@@ -814,11 +810,10 @@ function SkuCreateForm({
               }
             />
           </div>
-          {option.uncoded && (
-            <p className="text-xs text-muted-foreground sm:col-span-3">
-              코드가 없는 옵션 값을 골랐습니다. SKU 코드를 직접 입력해 주세요.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground sm:col-span-3">
+            SKU 코드와 이름은 선택한 옵션으로 서버가 만듭니다. 코드가 없는 이전
+            옵션 값은 목록에 나오지 않습니다.
+          </p>
           {createSku.isError && (
             <p className="text-sm text-destructive sm:col-span-3">
               {getErrorMessage(createSku.error, "등록에 실패했습니다.")}
@@ -839,6 +834,38 @@ function SkuCreateForm({
           >
             {createSku.isPending ? "등록 중..." : "등록"}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** 서버가 발급한 코드·이름을 등록 직후 보여 준다. */
+function IssuedDialog({
+  title,
+  rows,
+  onClose,
+}: {
+  title: string
+  rows: [string, string][]
+  onClose: () => void
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <dl className="grid grid-cols-[6rem_1fr] gap-2 text-sm">
+          {rows.map(([label, value]) => (
+            <div key={label} className="contents">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-mono break-all">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <DialogFooter>
+          <Button onClick={onClose}>확인</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
