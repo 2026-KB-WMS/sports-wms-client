@@ -29,6 +29,7 @@ import type {
 } from "~/lib/api/product"
 import { useCurrentUser } from "~/lib/current-user"
 
+import { CategoryOptionDialog } from "./category-option-dialog"
 import {
   useBrands,
   useCategories,
@@ -285,6 +286,7 @@ export function CategoryPanel({
   const canEdit = role === "HQ_ADMIN"
   const query = useCategories()
   const [editTarget, setEditTarget] = useState<Category | null>(null)
+  const [optionTarget, setOptionTarget] = useState<Category | null>(null)
   const target: Target<Category> = createOpen ? "new" : editTarget
   const close = () => {
     setEditTarget(null)
@@ -337,13 +339,20 @@ export function CategoryPanel({
                   />
                 </TableCell>
                 {canEdit && (
-                  <TableCell className="text-right">
+                  <TableCell className="space-x-1 text-right">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setEditTarget(category)}
                     >
                       수정
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOptionTarget(category)}
+                    >
+                      옵션 지정
                     </Button>
                   </TableCell>
                 )}
@@ -364,6 +373,10 @@ export function CategoryPanel({
           )}
         </DialogContent>
       </Dialog>
+      <CategoryOptionDialog
+        category={optionTarget}
+        onClose={() => setOptionTarget(null)}
+      />
     </>
   )
 }
@@ -391,7 +404,7 @@ function CategoryForm({
     trimmed.length <= 100 &&
     sortOrder !== "" &&
     Number(sortOrder) >= 0 &&
-    (category !== null || (code.trim() !== "" && code.trim().length <= 50))
+    (category !== null || /^[A-Za-z]{3}$/.test(code))
 
   // 수정은 바뀐 필드만 보낸다. 코드·상위 카테고리는 수정할 수 없다.
   const body: CategoryUpdateInput = {}
@@ -411,7 +424,7 @@ function CategoryForm({
     } else {
       create.mutate(
         {
-          categoryCode: code.trim(),
+          categoryCode: code,
           categoryName: trimmed,
           sortOrder: Number(sortOrder),
           parentCategoryId: parentId ? Number(parentId) : undefined,
@@ -432,12 +445,12 @@ function CategoryForm({
         {category === null && (
           <>
             <div>
-              <Label htmlFor="category-code">카테고리 코드 *</Label>
+              <Label htmlFor="category-code">카테고리 코드 * (영문 3자)</Label>
               <Input
                 id="category-code"
                 value={code}
-                maxLength={50}
-                onChange={(e) => setCode(e.target.value)}
+                maxLength={3}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
               />
             </div>
             <div>

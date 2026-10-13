@@ -67,6 +67,7 @@ export interface Category {
 
 export interface CategoryCreateInput {
   parentCategoryId?: number | null
+  /** 영문 3자. 서버가 대문자로 저장한다(브랜드 코드와 같은 규칙). */
   categoryCode: string
   categoryName: string
   sortOrder?: number
@@ -113,7 +114,17 @@ export interface ProductSummary {
   isActive: boolean
 }
 
+export interface ProductSpec {
+  optionGroupId: number
+  optionGroupName: string
+  optionValueId: number
+  optionCode: string | null
+  value: string
+}
+
 export interface ProductDetail extends ProductSummary {
+  /** 상세·등록·수정 응답에만 있다(목록에는 없음). */
+  specs?: ProductSpec[]
   description: string | null
   createdAt: string
   updatedAt: string
@@ -125,6 +136,8 @@ export interface ProductCreateInput {
   productCode: string
   productName: string
   description?: string | null
+  /** 카테고리에 SPEC으로 지정된 옵션 그룹마다 값 하나씩. 지정된 그룹이 없으면 생략한다. */
+  specOptionValueIds?: number[]
 }
 
 export interface ProductUpdateInput {
@@ -133,6 +146,8 @@ export interface ProductUpdateInput {
   brandId?: number
   categoryId?: number
   isActive?: boolean
+  /** 보내면 스펙 전체를 교체한다. 스펙·SKU가 있는 상품의 카테고리 변경은 409. */
+  specOptionValueIds?: number[]
 }
 
 export function getProducts(params?: {
@@ -199,14 +214,18 @@ export interface ProductSkuDetail extends Omit<
 
 export interface ProductSkuCreateInput {
   productId: number
-  skuCode: string
+  /** 비우면 서버가 `상품코드-옵션코드…`로 만든다. 코드 없는 옵션 값을 고르면 직접 입력해야 한다. */
+  skuCode?: string
   barcode?: string | null
-  skuName: string
+  /** 비우면 서버가 `상품명 (옵션값/옵션값)`으로 만든다. */
+  skuName?: string
   weight?: number | null
   currentPurchasePrice: number
   currentSupplyPrice: number
   unit?: string | null
   safetyStockQuantity?: number | null
+  /** 카테고리에 SKU로 지정된 옵션 그룹마다 값 하나씩. 지정된 그룹이 없으면 생략한다. */
+  optionValueIds?: number[]
 }
 
 export function getSkus(params?: {
@@ -268,8 +287,8 @@ export function changeSkuStatus(skuId: number, isActive: boolean) {
 }
 
 /**
- * 본사 관리자만. 옵션 그룹당 값 1개만 연결할 수 있고(409 `OPTION_GROUP_CONFLICT`), 연결 해제 API는 없다.
- * 이미 연결된 값은 409 `DUPLICATE_OPTION_VALUE`.
+ * 본사 관리자만. 옵션이 없는 기존 SKU에 한 번만 연결할 수 있다(이미 있으면 409 `SKU_OPTIONS_ALREADY_CONNECTED`).
+ * 등록과 같은 검증(지정된 SKU 그룹마다 값 1개)을 거치고 연결 해제 API는 없다. 새 SKU는 등록 요청에서 함께 보낸다.
  */
 export function connectSkuOptions(skuId: number, optionValueIds: number[]) {
   return apiClient.post<{ skuId: number; optionValues: SkuOptionValue[] }>(
@@ -280,6 +299,8 @@ export function connectSkuOptions(skuId: number, optionValueIds: number[]) {
 
 // ── 옵션 그룹 / 옵션 값 ──────────────────────────────────────────────
 
+export type CategoryOptionType = "SPEC" | "SKU"
+
 export interface OptionGroup {
   optionGroupId: number
   name: string
@@ -289,41 +310,78 @@ export interface OptionGroup {
 export interface OptionValue {
   optionValueId: number
   optionGroupId: number
+  /** 코드 도입 전에 만든 값은 null이고, 수정 API는 없다. */
+  optionCode: string | null
   value: string
   sortOrder: number
   isActive: boolean
   createdAt: string
 }
 
-export interface ProductOptionGroups {
-  productId: number
-  items: {
-    optionGroupId: number
-    name: string
-    values: { optionValueId: number; value: string; sortOrder: number }[]
-  }[]
+export interface OptionGroupValue {
+  optionValueId: number
+  optionCode: string | null
+  value: string
+  sortOrder: number
+  isActive: boolean
+}
+
+/** `GET /products/option-groups` 항목. 비활성 값도 포함한다. */
+export interface OptionGroupWithValues {
+  optionGroupId: number
+  name: string
+  values: OptionGroupValue[]
+}
+
+/** 카테고리에 적용되는 옵션 그룹(상위 카테고리 지정 상속 포함). */
+export interface CategoryOptionGroup extends OptionGroupWithValues {
+  optionType: CategoryOptionType
+  sortOrder: number
+  /** 지정을 등록한 카테고리 */
+  definedCategoryId: number
+  /** true이면 상위에서 상속한 지정이라 이 카테고리에서 바꿀 수 없다. */
+  inherited: boolean
+}
+
+export interface CategoryOptionGroupInput {
+  optionGroupId: number
+  optionType: CategoryOptionType
+  sortOrder?: number
 }
 
 export function createOptionGroup(name: string) {
   return apiClient.post<OptionGroup>("/api/v1/products/option-groups", { name })
 }
 
-export function getOptionGroupsByProduct(productId: number) {
-  return apiClient.get<ProductOptionGroups>(
-    `/api/v1/products/${productId}/option-groups`
+export function getOptionGroups() {
+  return apiClient.get<ListData<OptionGroupWithValues>>(
+    "/api/v1/products/option-groups"
+  )
+}
+
+export function getCategoryOptionGroups(categoryId: number) {
+  return apiClient.get<ListData<CategoryOptionGroup>>(
+    `/api/v1/products/categories/${categoryId}/option-groups`
+  )
+}
+
+/** 본사 관리자만. 이 카테고리 자신의 지정 전체를 교체한다(빈 목록이면 모두 지움). 응답은 상속을 합친 결과다. */
+export function replaceCategoryOptionGroups(
+  categoryId: number,
+  items: CategoryOptionGroupInput[]
+) {
+  return apiClient.put<ListData<CategoryOptionGroup>>(
+    `/api/v1/products/categories/${categoryId}/option-groups`,
+    { items }
   )
 }
 
 export function createOptionValue(
   optionGroupId: number,
-  value: string,
-  sortOrder?: number
+  body: { optionCode: string; value: string; sortOrder?: number }
 ) {
   return apiClient.post<OptionValue>(
     `/api/v1/products/option-groups/${optionGroupId}/values`,
-    {
-      value,
-      sortOrder,
-    }
+    body
   )
 }

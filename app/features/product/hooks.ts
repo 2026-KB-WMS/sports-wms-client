@@ -171,27 +171,69 @@ export function useChangeSkuStatus() {
   })
 }
 
-export function useOptionGroupsByProduct(productId: number | null) {
+export function useOptionGroups() {
   return useQuery({
-    queryKey: ["product", "option-groups", productId],
-    queryFn: () => productApi.getOptionGroupsByProduct(productId as number),
-    enabled: productId != null,
+    queryKey: ["product", "option-groups"],
+    queryFn: productApi.getOptionGroups,
+  })
+}
+
+/** 카테고리에 적용되는 옵션 그룹(상속 포함). */
+export function useCategoryOptionGroups(categoryId: number | null) {
+  return useQuery({
+    queryKey: ["product", "category-option-groups", categoryId],
+    queryFn: () => productApi.getCategoryOptionGroups(categoryId as number),
+    enabled: categoryId != null,
+  })
+}
+
+export function useReplaceCategoryOptionGroups() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      categoryId,
+      items,
+    }: {
+      categoryId: number
+      // 하위 카테고리의 적용 결과도 바뀌므로 카테고리 옵션 키 전체를 다시 읽는다.
+      items: productApi.CategoryOptionGroupInput[]
+    }) => productApi.replaceCategoryOptionGroups(categoryId, items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["product", "category-option-groups"],
+      })
+    },
   })
 }
 
 export function useCreateOptionGroup() {
-  return useMutation({ mutationFn: productApi.createOptionGroup })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: productApi.createOptionGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", "option-groups"] })
+    },
+  })
 }
 
 export function useCreateOptionValue() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
       optionGroupId,
+      optionCode,
       value,
     }: {
       optionGroupId: number
+      optionCode: string
       value: string
-    }) => productApi.createOptionValue(optionGroupId, value),
+    }) => productApi.createOptionValue(optionGroupId, { optionCode, value }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["product", "option-groups"] })
+      queryClient.invalidateQueries({
+        queryKey: ["product", "category-option-groups"],
+      })
+    },
   })
 }
 

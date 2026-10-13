@@ -41,6 +41,7 @@ import {
 import { ActiveToggle } from "./active-toggle"
 import { BrandPanel, CategoryPanel } from "./brand-category-panels"
 import { SkuEditDialog } from "./sku-edit-dialog"
+import { OptionSelects, useOptionSelection } from "./option-select"
 import { SkuOptionDialog } from "./sku-option-dialog"
 
 /** 단위 목록을 받기 전에 쓰는 기본값. 서버 기본 단위는 EA다. */
@@ -421,13 +422,15 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
                   >
                     수정
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setOptionTarget(sku)}
-                  >
-                    옵션
-                  </Button>
+                  {sku.optionValues.length === 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOptionTarget(sku)}
+                    >
+                      옵션
+                    </Button>
+                  )}
                   <ActiveToggle
                     kind="SKU"
                     name={sku.skuName}
@@ -476,9 +479,17 @@ function ProductCreateForm({
     productName: "",
     description: "",
   })
+  const spec = useOptionSelection(
+    form.categoryId ? Number(form.categoryId) : null,
+    "SPEC"
+  )
 
   const canSubmit =
-    form.brandId && form.categoryId && form.productCode && form.productName
+    form.brandId &&
+    form.categoryId &&
+    form.productCode &&
+    form.productName &&
+    spec.complete
 
   function handleSubmit() {
     if (!canSubmit) return
@@ -489,9 +500,11 @@ function ProductCreateForm({
         productCode: form.productCode,
         productName: form.productName,
         description: form.description || undefined,
+        specOptionValueIds: spec.groups.length > 0 ? spec.ids : undefined,
       },
       {
         onSuccess: () => {
+          spec.reset()
           setForm({
             brandId: "",
             categoryId: "",
@@ -566,6 +579,15 @@ function ProductCreateForm({
               ))}
             </Select>
           </div>
+          {spec.groups.length > 0 && (
+            <>
+              <p className="text-xs text-muted-foreground sm:col-span-2">
+                스펙은 상품 단위 값입니다. SKU마다 다른 값은 SKU 등록에서
+                고릅니다.
+              </p>
+              <OptionSelects state={spec} idPrefix="new-product-spec" />
+            </>
+          )}
           <div className="sm:col-span-2">
             <Label htmlFor="new-product-description">설명</Label>
             <Textarea
@@ -606,7 +628,7 @@ function SkuCreateForm({
   products,
   onClose,
 }: {
-  products: { productId: number; productName: string }[]
+  products: { productId: number; productName: string; categoryId: number }[]
   onClose: () => void
 }) {
   const createSku = useCreateSku()
@@ -622,12 +644,17 @@ function SkuCreateForm({
     safetyStockQuantity: "",
     barcode: "",
   })
+  const categoryId =
+    products.find((p) => String(p.productId) === form.productId)?.categoryId ??
+    null
+  const option = useOptionSelection(categoryId, "SKU")
 
   const isPrice = (v: string) => v !== "" && Number(v) >= 0
+  // 코드 없는 옵션 값(이전에 만든 값)을 고르면 서버가 SKU 코드를 만들 수 없다.
   const canSubmit =
     form.productId &&
-    form.skuCode &&
-    form.skuName &&
+    option.complete &&
+    (!option.uncoded || form.skuCode) &&
     isPrice(form.currentPurchasePrice) &&
     isPrice(form.currentSupplyPrice)
 
@@ -636,8 +663,9 @@ function SkuCreateForm({
     createSku.mutate(
       {
         productId: Number(form.productId),
-        skuCode: form.skuCode,
-        skuName: form.skuName,
+        skuCode: form.skuCode || undefined,
+        skuName: form.skuName || undefined,
+        optionValueIds: option.groups.length > 0 ? option.ids : undefined,
         unit: form.unit,
         barcode: form.barcode || undefined,
         weight: form.weight ? Number(form.weight) : undefined,
@@ -649,6 +677,7 @@ function SkuCreateForm({
       },
       {
         onSuccess: () => {
+          option.reset()
           setForm({
             productId: "",
             skuCode: "",
@@ -704,10 +733,14 @@ function SkuCreateForm({
               ))}
             </Select>
           </div>
+          <OptionSelects state={option} idPrefix="new-sku-option" />
           <div>
-            <Label htmlFor="new-sku-code">SKU 코드</Label>
+            <Label htmlFor="new-sku-code">
+              SKU 코드{option.uncoded && " *"}
+            </Label>
             <Input
               id="new-sku-code"
+              placeholder={option.uncoded ? undefined : "비우면 자동 생성"}
               value={form.skuCode}
               onChange={(e) =>
                 setForm((f) => ({ ...f, skuCode: e.target.value }))
@@ -718,6 +751,7 @@ function SkuCreateForm({
             <Label htmlFor="new-sku-name">SKU명</Label>
             <Input
               id="new-sku-name"
+              placeholder="비우면 자동 생성"
               value={form.skuName}
               onChange={(e) =>
                 setForm((f) => ({ ...f, skuName: e.target.value }))
@@ -780,6 +814,11 @@ function SkuCreateForm({
               }
             />
           </div>
+          {option.uncoded && (
+            <p className="text-xs text-muted-foreground sm:col-span-3">
+              코드가 없는 옵션 값을 골랐습니다. SKU 코드를 직접 입력해 주세요.
+            </p>
+          )}
           {createSku.isError && (
             <p className="text-sm text-destructive sm:col-span-3">
               {getErrorMessage(createSku.error, "등록에 실패했습니다.")}
