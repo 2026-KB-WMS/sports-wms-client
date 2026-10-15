@@ -68,8 +68,7 @@ export function PurchaseOrderDetailPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU 코드</TableHead>
-                  <TableHead>SKU명</TableHead>
+                  <TableHead>SKU</TableHead>
                   <TableHead className="text-right">발주 수량</TableHead>
                   <TableHead className="text-right">입고 수량</TableHead>
                   <TableHead className="text-right">잔여</TableHead>
@@ -81,10 +80,12 @@ export function PurchaseOrderDetailPage({
               <TableBody>
                 {lines.map((line) => (
                   <TableRow key={line.purchaseOrderLineId}>
-                    <TableCell className="font-mono text-xs">
-                      {line.skuCode}
+                    <TableCell>
+                      <span className="block font-mono text-xs font-normal text-muted-foreground">
+                        {line.skuCode}
+                      </span>
+                      {line.skuName}
                     </TableCell>
-                    <TableCell>{line.skuName}</TableCell>
                     <TableCell className="text-right">
                       {line.expectedQuantity}
                     </TableCell>
@@ -192,7 +193,8 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
         </p>
         <p>
           <span className="text-muted-foreground">등록 </span>
-          {formatDateTime(order.createdAt)} ({order.createdByName ?? `사용자 #${order.createdBy}`})
+          {formatDateTime(order.createdAt)} (
+          {order.createdByName ?? `사용자 #${order.createdBy}`})
         </p>
         {order.note && (
           <p className="sm:col-span-2">

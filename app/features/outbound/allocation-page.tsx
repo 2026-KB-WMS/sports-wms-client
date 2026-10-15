@@ -92,21 +92,6 @@ export function AllocationPage() {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-            <div className="w-32">
-              <Label htmlFor="alloc-status">상태</Label>
-              <Select
-                id="alloc-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">전체</option>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <div className="w-40">
               <Label htmlFor="alloc-warehouse">창고</Label>
               <Select
@@ -118,6 +103,21 @@ export function AllocationPage() {
                 {warehouses.map((w) => (
                   <option key={w.warehouseId} value={w.warehouseId}>
                     {w.warehouseName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="w-32">
+              <Label htmlFor="alloc-status">상태</Label>
+              <Select
+                id="alloc-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">전체</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </Select>
@@ -138,6 +138,7 @@ export function AllocationPage() {
           {!query.isLoading && !query.isError && (
             <AllocationTable
               allocations={allocations}
+              warehouses={warehouses}
               canRelease={role === "WAREHOUSE_MANAGER"}
               onRelease={(a) => {
                 release.reset()
@@ -175,10 +176,12 @@ export function AllocationPage() {
 
 function AllocationTable({
   allocations,
+  warehouses,
   canRelease,
   onRelease,
 }: {
   allocations: Allocation[]
+  warehouses: { warehouseId: number; warehouseName: string }[]
   canRelease: boolean
   onRelease: (allocation: Allocation) => void
 }) {
@@ -194,6 +197,7 @@ function AllocationTable({
       <TableHeader>
         <TableRow>
           <TableHead>발주</TableHead>
+          <TableHead>창고</TableHead>
           <TableHead>SKU</TableHead>
           <TableHead>로트</TableHead>
           <TableHead>유통기한</TableHead>
@@ -216,10 +220,14 @@ function AllocationTable({
                 {a.orderNo}
               </Link>
             </TableCell>
+            <TableCell className="text-muted-foreground">
+              {warehouses.find((w) => w.warehouseId === a.warehouseId)
+                ?.warehouseName ?? `#${a.warehouseId}`}
+            </TableCell>
             <TableCell>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="block font-mono text-xs text-muted-foreground">
                 {a.skuCode}
-              </span>{" "}
+              </span>
               {a.skuName}
             </TableCell>
             <TableCell className="font-mono text-xs">{a.lotNumber}</TableCell>

@@ -34,6 +34,32 @@ export function getInventories(params?: {
   })
 }
 
+// ── 재고 (구역 × SKU 집계) ──────────────────────────────────────────────
+
+export interface InventorySectionSummary extends InventorySkuSummary {
+  warehouseId: number
+  warehouseName: string
+  sectionId: number
+  sectionCode: string
+  sectionName: string
+  categoryId: number | null
+  categoryName: string | null
+}
+
+/** 정렬 고정(창고→구역→SKU), 페이징 없음. 비담당 창고·구역은 403, 없는 필터 대상은 404. 카테고리는 하위 미포함. */
+export function getInventoriesBySection(params?: {
+  warehouseId?: number
+  sectionId?: number
+  categoryId?: number
+  skuId?: number
+  keyword?: string
+}) {
+  return apiClient.get<ListData<InventorySectionSummary>>(
+    "/api/v1/inventory/by-section",
+    { query: params }
+  )
+}
+
 // ── 재고 (로트·구역 단위 상세) ──────────────────────────────────────────────
 
 export interface InventoryLotView {

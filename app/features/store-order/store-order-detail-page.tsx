@@ -3,7 +3,9 @@ import { Link } from "react-router"
 
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { ReasonDialog } from "~/components/common/reason-dialog"
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
+import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import {
@@ -45,15 +47,21 @@ export function StoreOrderDetailPage({
   // 출고·재고 할당 화면은 점주가 볼 수 없다.
   const canViewFulfillment = useCurrentUser().role !== "STORE_OWNER"
 
+  // 발주를 못 읽으면(403·404 등) 같은 오류가 항목 표에도 반복되므로 메시지 한 번만 보인다.
+  if (orderQuery.isError) {
+    return (
+      <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
+        <p className="text-sm text-destructive">
+          {getErrorMessage(orderQuery.error, "발주를 불러오지 못했습니다.")}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
       {orderQuery.isLoading && (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
-      )}
-      {orderQuery.isError && (
-        <p className="text-sm text-destructive">
-          {getErrorMessage(orderQuery.error, "발주를 불러오지 못했습니다.")}
-        </p>
       )}
       {order && <OrderHeaderCard order={order} lines={details?.items ?? []} />}
 
@@ -86,8 +94,7 @@ export function StoreOrderDetailPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>SKU 코드</TableHead>
-                  <TableHead>SKU명</TableHead>
+                  <TableHead>SKU</TableHead>
                   <TableHead className="text-right">요청</TableHead>
                   <TableHead className="text-right">할당</TableHead>
                   <TableHead className="text-right">출고</TableHead>
@@ -100,10 +107,12 @@ export function StoreOrderDetailPage({
               <TableBody>
                 {details.items.map((item) => (
                   <TableRow key={item.storeOrderLineId}>
-                    <TableCell className="font-mono text-xs">
-                      {item.skuCode}
+                    <TableCell>
+                      <span className="block font-mono text-xs font-normal text-muted-foreground">
+                        {item.skuCode}
+                      </span>
+                      {item.skuName}
                     </TableCell>
-                    <TableCell>{item.skuName}</TableCell>
                     <TableCell className="text-right">
                       {item.requestedQuantity}
                     </TableCell>
@@ -146,12 +155,18 @@ export function StoreOrderDetailPage({
                   <TableHead>상태</TableHead>
                   <TableHead>출고일시</TableHead>
                   <TableHead>배송 완료</TableHead>
-                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {details.outbounds.map((outbound) => (
-                  <TableRow key={outbound.outboundId}>
+                  <LinkRow
+                    key={outbound.outboundId}
+                    to={
+                      canViewFulfillment
+                        ? `/outbounds/${outbound.outboundId}`
+                        : undefined
+                    }
+                  >
                     <TableCell className="font-mono text-xs">
                       {outbound.outboundNo}
                     </TableCell>
@@ -164,20 +179,7 @@ export function StoreOrderDetailPage({
                     <TableCell className="text-muted-foreground">
                       {formatDateTime(outbound.deliveredAt)}
                     </TableCell>
-                    <TableCell>
-                      {canViewFulfillment && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          render={
-                            <Link to={`/outbounds/${outbound.outboundId}`} />
-                          }
-                        >
-                          상세
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                  </LinkRow>
                 ))}
               </TableBody>
             </Table>
@@ -204,25 +206,21 @@ export function StoreOrderDetailPage({
                 {details.statusHistory.map((h, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 [&_[data-slot=badge]]:font-normal [&_[data-variant=secondary]]:text-foreground">
                         {h.fromStatus ? (
                           <StatusBadge status={h.fromStatus} />
                         ) : (
-                          <span className="text-muted-foreground">등록</span>
+                          <Badge variant="secondary">등록</Badge>
                         )}
                         →
                         <StatusBadge status={h.toStatus} />
                       </span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {h.reason ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell>{h.reason ?? "-"}</TableCell>
+                    <TableCell>
                       {h.changedByName ?? `#${h.changedBy}`}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDateTime(h.changedAt)}
-                    </TableCell>
+                    <TableCell>{formatDateTime(h.changedAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -388,7 +386,8 @@ function OrderHeaderCard({
         </p>
         <p>
           <span className="text-muted-foreground">요청 </span>
-          {formatDateTime(order.requestedAt)} ({order.createdByName ?? `사용자 #${order.createdBy}`})
+          {formatDateTime(order.requestedAt)} (
+          {order.createdByName ?? `사용자 #${order.createdBy}`})
         </p>
         {order.note && (
           <p className="sm:col-span-2">

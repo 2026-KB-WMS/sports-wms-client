@@ -1,8 +1,7 @@
 import { useState } from "react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
-import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
@@ -78,21 +77,6 @@ export function OutboundPage() {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-            <div className="w-32">
-              <Label htmlFor="ob-status">상태</Label>
-              <Select
-                id="ob-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">전체</option>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <div className="w-40">
               <Label htmlFor="ob-warehouse">창고</Label>
               <Select
@@ -104,6 +88,21 @@ export function OutboundPage() {
                 {warehouses.map((w) => (
                   <option key={w.warehouseId} value={w.warehouseId}>
                     {w.warehouseName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="w-32">
+              <Label htmlFor="ob-status">상태</Label>
+              <Select
+                id="ob-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">전체</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </Select>
@@ -168,12 +167,11 @@ function OutboundTable({ outbounds }: { outbounds: OutboundListItem[] }) {
           <TableHead className="text-right">항목 수</TableHead>
           <TableHead>배송 시작</TableHead>
           <TableHead>생성일시</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {outbounds.map((o) => (
-          <TableRow key={o.outboundId}>
+          <LinkRow key={o.outboundId} to={`/outbounds/${o.outboundId}`}>
             <TableCell className="font-mono text-xs">{o.outboundNo}</TableCell>
             <TableCell className="font-mono text-xs text-muted-foreground">
               {o.orderNo}
@@ -190,16 +188,7 @@ function OutboundTable({ outbounds }: { outbounds: OutboundListItem[] }) {
             <TableCell className="text-muted-foreground">
               {formatDateTime(o.createdAt)}
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/outbounds/${o.outboundId}`} />}
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>

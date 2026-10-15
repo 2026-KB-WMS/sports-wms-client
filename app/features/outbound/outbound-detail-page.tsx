@@ -310,9 +310,9 @@ function PickingForm({
           {rows.map(({ item, raw, valid }) => (
             <TableRow key={item.outboundLineId}>
               <TableCell>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="block font-mono text-xs text-muted-foreground">
                   {item.skuCode}
-                </span>{" "}
+                </span>
                 {item.skuName}
               </TableCell>
               <TableCell className="font-mono text-xs">
@@ -437,9 +437,9 @@ function LineTable({ items }: { items: OutboundLine[] }) {
         {items.map((item) => (
           <TableRow key={item.outboundLineId}>
             <TableCell>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="block font-mono text-xs text-muted-foreground">
                 {item.skuCode}
-              </span>{" "}
+              </span>
               {item.skuName}
             </TableCell>
             <TableCell className="font-mono text-xs">

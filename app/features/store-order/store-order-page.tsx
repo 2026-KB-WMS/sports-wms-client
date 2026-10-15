@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -42,7 +42,7 @@ const STATUS_OPTIONS: { value: StoreOrderStatus; label: string }[] = [
 /**
  * 지점 발주 목록.
  * 본사 관리자는 `GET /orders`, 점주·창고 관리자는 `GET /orders/my`(훅이 역할로 고른다).
- * 점주는 본인 지점(storeId), 창고 관리자는 담당 창고(warehouseId)로 좁혀 조회한다.
+ * 점주는 본인 지점(storeId)으로 좁혀 조회하고, 창고 관리자는 창고를 고르지 않으면 서버가 담당 창고 전체로 좁힌다.
  */
 export function StoreOrderPage() {
   const { role } = useCurrentUser()
@@ -67,19 +67,16 @@ export function StoreOrderPage() {
   const scopedStoreId = isOwner
     ? storeId || String(myStores[0]?.storeId ?? "")
     : storeId
-  const scopedWarehouseId = isManager
-    ? warehouseId || String(warehouses[0]?.warehouseId ?? "")
-    : warehouseId
   const scopeReady =
     isAdmin ||
     (isOwner && scopedStoreId !== "") ||
-    (isManager && scopedWarehouseId !== "")
+    (isManager && warehouses.length > 0)
 
   const query = useStoreOrders(
     {
       status: (status || undefined) as StoreOrderStatus | undefined,
       storeId: scopedStoreId ? Number(scopedStoreId) : undefined,
-      warehouseId: scopedWarehouseId ? Number(scopedWarehouseId) : undefined,
+      warehouseId: warehouseId ? Number(warehouseId) : undefined,
       keyword: keyword || undefined,
       // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
       requestedFrom: requestedFrom ? `${requestedFrom}T00:00:00` : undefined,
@@ -120,21 +117,6 @@ export function StoreOrderPage() {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-            <div className="w-32">
-              <Label htmlFor="so-status">상태</Label>
-              <Select
-                id="so-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">전체</option>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             {(isAdmin || (isOwner && myStores.length > 1)) && (
               <div className="w-40">
                 <Label htmlFor="so-store">지점</Label>
@@ -152,15 +134,15 @@ export function StoreOrderPage() {
                 </Select>
               </div>
             )}
-            {(isAdmin || (isManager && warehouses.length > 1)) && (
+            {(isAdmin || isManager) && (
               <div className="w-40">
                 <Label htmlFor="so-warehouse">창고</Label>
                 <Select
                   id="so-warehouse"
-                  value={isManager ? scopedWarehouseId : warehouseId}
+                  value={warehouseId}
                   onChange={(e) => setWarehouseId(e.target.value)}
                 >
-                  {isAdmin && <option value="">전체</option>}
+                  <option value="">전체</option>
                   {warehouses.map((w) => (
                     <option key={w.warehouseId} value={w.warehouseId}>
                       {w.warehouseName}
@@ -169,6 +151,21 @@ export function StoreOrderPage() {
                 </Select>
               </div>
             )}
+            <div className="w-32">
+              <Label htmlFor="so-status">상태</Label>
+              <Select
+                id="so-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">전체</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <div>
               <Label htmlFor="so-from">요청일 (시작)</Label>
               <Input
@@ -240,12 +237,14 @@ function StoreOrderTable({
           <TableHead className="text-right">총액</TableHead>
           <TableHead>배송 요청</TableHead>
           <TableHead>요청일시</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {orders.map((order) => (
-          <TableRow key={order.storeOrderId}>
+          <LinkRow
+            key={order.storeOrderId}
+            to={`/store-orders/${order.storeOrderId}`}
+          >
             <TableCell className="font-mono text-xs">{order.orderNo}</TableCell>
             <TableCell>{order.storeName}</TableCell>
             <TableCell className="text-muted-foreground">
@@ -268,16 +267,7 @@ function StoreOrderTable({
             <TableCell className="text-muted-foreground">
               {formatDateTime(order.requestedAt)}
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/store-orders/${order.storeOrderId}`} />}
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>

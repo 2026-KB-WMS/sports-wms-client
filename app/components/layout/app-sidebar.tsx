@@ -31,6 +31,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
   useSidebar,
 } from "~/components/ui/sidebar"
 import { cn } from "~/lib/utils"
@@ -171,15 +172,16 @@ export function AppSidebar() {
     .filter((g) => g.items.length > 0)
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 py-1.5">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Box className="size-4" strokeWidth={2.5} />
           </div>
-          <span className="text-sm font-bold tracking-tight group-data-[collapsible=icon]:hidden">
+          <span className="flex-1 text-sm font-bold tracking-tight">
             WMS 창고 관리
           </span>
+          <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
