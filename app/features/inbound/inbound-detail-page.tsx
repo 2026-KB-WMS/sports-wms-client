@@ -275,9 +275,9 @@ function LineTable({ items }: { items: InboundLine[] }) {
         {items.map((item) => (
           <TableRow key={item.inboundLineId}>
             <TableCell>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="block font-mono text-xs text-muted-foreground">
                 {item.skuCode}
-              </span>{" "}
+              </span>
               {item.skuName}
             </TableCell>
             <TableCell className="font-mono text-xs">

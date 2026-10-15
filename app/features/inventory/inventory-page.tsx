@@ -6,7 +6,15 @@ import { StatusBadge } from "~/components/common/status-badge"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
+import { Select } from "~/components/ui/select"
 import { Label } from "~/components/ui/label"
 import { Textarea } from "~/components/ui/textarea"
 import {
@@ -19,7 +27,12 @@ import {
 } from "~/components/ui/table"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import { getRoleLabel, useCurrentUser } from "~/lib/current-user"
+import { useCategories } from "~/features/product/hooks"
+import { formatDateTime } from "~/features/purchase-order/format"
+import { useSelectableWarehouses } from "~/features/purchase-order/hooks"
+import { useSectionsByWarehouse } from "~/features/warehouse/hooks"
 import type {
+  InventorySectionSummary,
   InventoryLotView,
   InventorySkuSummary,
   LotStatus,
@@ -31,14 +44,16 @@ import {
   useAdjustInventory,
   useChangeLotStatus,
   useInventoriesByLot,
+  useInventoriesBySection,
   useInventories,
   useLots,
   useLowStock,
 } from "./hooks"
 
-type Tab = "summary" | "low-stock" | "by-lot" | "lots"
+type Tab = "by-section" | "summary" | "low-stock" | "by-lot" | "lots"
 
 const tabs: { key: Tab; label: string }[] = [
+  { key: "by-section", label: "구역별 재고" },
   { key: "summary", label: "전체 재고" },
   { key: "low-stock", label: "재고 부족" },
   { key: "by-lot", label: "로트별 재고" },
@@ -46,7 +61,7 @@ const tabs: { key: Tab; label: string }[] = [
 ]
 
 export function InventoryPage() {
-  const [tab, setTab] = useState<Tab>("summary")
+  const [tab, setTab] = useState<Tab>("by-section")
   const [keyword, setKeyword] = useState("")
   const [adjustTarget, setAdjustTarget] = useState<InventoryLotView | null>(
     null
@@ -70,13 +85,15 @@ export function InventoryPage() {
             {t.label}
           </Button>
         ))}
-        <div className="ml-auto w-56">
-          <Input
-            placeholder="SKU 검색"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-        </div>
+        {tab !== "by-section" && tab !== "by-lot" && (
+          <div className="ml-auto w-56">
+            <Input
+              placeholder="SKU 검색"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       {adjustTarget && (
@@ -94,6 +111,7 @@ export function InventoryPage() {
           <CardTitle>{tabs.find((t) => t.key === tab)?.label}</CardTitle>
         </CardHeader>
         <CardContent>
+          {tab === "by-section" && <BySectionPanel />}
           {tab === "summary" && <SummaryTable query={summaryQuery} />}
           {tab === "low-stock" && <LowStockTable query={lowStockQuery} />}
           {tab === "by-lot" && (
@@ -148,6 +166,244 @@ function queryState({
   return null
 }
 
+function BySectionPanel() {
+  const warehouses = useSelectableWarehouses()
+  const categories = useCategories()
+  const [draft, setDraft] = useState({
+    warehouseId: "",
+    sectionId: "",
+    categoryId: "",
+    keyword: "",
+  })
+  const [lotTarget, setLotTarget] = useState<InventorySectionSummary | null>(
+    null
+  )
+
+  const sections = useSectionsByWarehouse(
+    draft.warehouseId ? Number(draft.warehouseId) : null
+  )
+  const query = useInventoriesBySection({
+    warehouseId: draft.warehouseId ? Number(draft.warehouseId) : undefined,
+    sectionId: draft.sectionId ? Number(draft.sectionId) : undefined,
+    categoryId: draft.categoryId ? Number(draft.categoryId) : undefined,
+    keyword: draft.keyword.trim() || undefined,
+  })
+  const items: InventorySectionSummary[] = query.data?.items ?? []
+
+  const state = queryState({
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isEmpty: items.length === 0,
+    emptyMessage: "조건에 맞는 재고가 없습니다.",
+  })
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-44">
+          <Label>창고</Label>
+          <Select
+            value={draft.warehouseId}
+            onChange={(e) =>
+              setDraft({ ...draft, warehouseId: e.target.value, sectionId: "" })
+            }
+          >
+            <option value="">전체</option>
+            {warehouses.map((w) => (
+              <option key={w.warehouseId} value={w.warehouseId}>
+                {w.warehouseName}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="w-44">
+          <Label>구역</Label>
+          <Select
+            value={draft.sectionId}
+            disabled={!draft.warehouseId}
+            onChange={(e) => setDraft({ ...draft, sectionId: e.target.value })}
+          >
+            <option value="">전체</option>
+            {(sections.data?.items ?? []).map((s) => (
+              <option key={s.sectionId} value={s.sectionId}>
+                {s.sectionCode} · {s.sectionName}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="w-56">
+          <Label htmlFor="by-section-keyword">SKU 검색</Label>
+          <Input
+            id="by-section-keyword"
+            placeholder="SKU 코드·이름"
+            value={draft.keyword}
+            onChange={(e) => setDraft({ ...draft, keyword: e.target.value })}
+          />
+        </div>
+        <div className="w-44">
+          <Label>카테고리</Label>
+          <Select
+            value={draft.categoryId}
+            onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })}
+          >
+            <option value="">전체</option>
+            {(categories.data?.items ?? []).map((c) => (
+              <option key={c.categoryId} value={c.categoryId}>
+                {c.categoryName}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        카테고리는 선택한 카테고리와 정확히 일치하는 SKU만 조회됩니다(하위
+        카테고리 미포함). 행을 누르면 로트별 재고를 볼 수 있습니다.
+      </p>
+      {state ?? (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>창고</TableHead>
+              <TableHead>구역</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead>단위</TableHead>
+              <TableHead>카테고리</TableHead>
+              <TableHead className="text-right">보유</TableHead>
+              <TableHead className="text-right">가용</TableHead>
+              <TableHead className="text-right">할당</TableHead>
+              <TableHead className="text-right">불량</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => {
+              const key = `${item.sectionId}-${item.skuId}`
+              return (
+                <TableRow
+                  key={key}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setLotTarget(item)}
+                >
+                  <TableCell>{item.warehouseName}</TableCell>
+                  <TableCell>
+                    {item.sectionCode} · {item.sectionName}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <span className="block font-mono text-xs font-normal text-muted-foreground">
+                      {item.skuCode}
+                    </span>
+                    {item.skuName}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.unit ?? "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {item.categoryName ?? "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {item.totalQuantity}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {item.availableQuantity}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {item.allocatedQuantity}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {item.defectiveQuantity}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      )}
+      <Dialog
+        open={lotTarget !== null}
+        onOpenChange={(open) => !open && setLotTarget(null)}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              로트별 재고
+              {lotTarget &&
+                ` · ${lotTarget.skuName} (${lotTarget.sectionCode})`}
+            </DialogTitle>
+            {lotTarget && (
+              <DialogDescription className="font-mono text-xs">
+                {lotTarget.skuCode}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          {lotTarget && <SectionLots item={lotTarget} />}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function SectionLots({ item }: { item: InventorySectionSummary }) {
+  const query = useInventoriesByLot({
+    warehouseId: item.warehouseId,
+    sectionId: item.sectionId,
+    skuId: item.skuId,
+  })
+  const lots = query.data?.items ?? []
+  const state = queryState({
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    isEmpty: lots.length === 0,
+    emptyMessage: "로트별 재고가 없습니다.",
+  })
+  if (state) return state
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>로트 번호</TableHead>
+          <TableHead>품질</TableHead>
+          <TableHead>유효기한</TableHead>
+          <TableHead className="text-right">보유</TableHead>
+          <TableHead className="text-right">할당</TableHead>
+          <TableHead className="text-right">가용</TableHead>
+          <TableHead>최근 실사</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {lots.map((lot) => (
+          <TableRow key={lot.inventoryLotId}>
+            <TableCell className="font-mono text-xs">{lot.lotNumber}</TableCell>
+            <TableCell>
+              <Badge
+                variant={
+                  lot.qualityStatus === "AVAILABLE" ? "outline" : "destructive"
+                }
+              >
+                {lot.qualityStatus === "AVAILABLE" ? "가용" : "불량"}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {lot.expiryDate ?? "-"}
+            </TableCell>
+            <TableCell className="text-right">{lot.onHandQuantity}</TableCell>
+            <TableCell className="text-right">
+              {lot.allocatedQuantity}
+            </TableCell>
+            <TableCell className="text-right">
+              {lot.availableQuantity}
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {formatDateTime(lot.lastCountedAt)}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
 function SummaryTable({ query }: { query: ReturnType<typeof useInventories> }) {
   const items: InventorySkuSummary[] = query.data?.items ?? []
   const state = queryState({
@@ -163,8 +419,7 @@ function SummaryTable({ query }: { query: ReturnType<typeof useInventories> }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>SKU 코드</TableHead>
-          <TableHead>SKU명</TableHead>
+          <TableHead>SKU</TableHead>
           <TableHead>단위</TableHead>
           <TableHead className="text-right">총 수량</TableHead>
           <TableHead className="text-right">가용</TableHead>
@@ -175,10 +430,12 @@ function SummaryTable({ query }: { query: ReturnType<typeof useInventories> }) {
       <TableBody>
         {items.map((item) => (
           <TableRow key={item.skuId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {item.skuCode}
+            <TableCell className="font-medium">
+              <span className="block font-mono text-xs font-normal text-muted-foreground">
+                {item.skuCode}
+              </span>
+              {item.skuName}
             </TableCell>
-            <TableCell className="font-medium">{item.skuName}</TableCell>
             <TableCell className="text-muted-foreground">
               {item.unit ?? "-"}
             </TableCell>
@@ -214,8 +471,7 @@ function LowStockTable({ query }: { query: ReturnType<typeof useLowStock> }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>SKU 코드</TableHead>
-          <TableHead>SKU명</TableHead>
+          <TableHead>SKU</TableHead>
           <TableHead>단위</TableHead>
           <TableHead className="text-right">안전 재고</TableHead>
           <TableHead className="text-right">가용 수량</TableHead>
@@ -225,10 +481,12 @@ function LowStockTable({ query }: { query: ReturnType<typeof useLowStock> }) {
       <TableBody>
         {items.map((item) => (
           <TableRow key={item.skuId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {item.skuCode}
+            <TableCell className="font-medium">
+              <span className="block font-mono text-xs font-normal text-muted-foreground">
+                {item.skuCode}
+              </span>
+              {item.skuName}
             </TableCell>
-            <TableCell className="font-medium">{item.skuName}</TableCell>
             <TableCell className="text-muted-foreground">
               {item.unit ?? "-"}
             </TableCell>
@@ -277,6 +535,7 @@ function ByLotTable({
           <TableHead className="text-right">가용</TableHead>
           <TableHead>품질</TableHead>
           <TableHead>유효기한</TableHead>
+          <TableHead>최근 실사</TableHead>
           <TableHead />
         </TableRow>
       </TableHeader>
@@ -308,6 +567,9 @@ function ByLotTable({
             </TableCell>
             <TableCell className="text-muted-foreground">
               {item.expiryDate ?? "-"}
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {formatDateTime(item.lastCountedAt)}
             </TableCell>
             <TableCell>
               <Button variant="ghost" size="sm" onClick={() => onAdjust(item)}>

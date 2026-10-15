@@ -242,8 +242,7 @@ function LineEditor({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>SKU 코드</TableHead>
-              <TableHead>SKU명</TableHead>
+              <TableHead>SKU</TableHead>
               <TableHead className="text-right">공급가</TableHead>
               <TableHead className="w-32">수량</TableHead>
               <TableHead className="text-right">금액</TableHead>
@@ -253,10 +252,12 @@ function LineEditor({
           <TableBody>
             {lines.map((line, index) => (
               <TableRow key={line.skuId}>
-                <TableCell className="font-mono text-xs">
-                  {line.skuCode}
+                <TableCell>
+                  <span className="block font-mono text-xs font-normal text-muted-foreground">
+                    {line.skuCode}
+                  </span>
+                  {line.skuName}
                 </TableCell>
-                <TableCell>{line.skuName}</TableCell>
                 <TableCell className="text-right">
                   {line.unitPrice != null ? formatWon(line.unitPrice) : "-"}
                 </TableCell>

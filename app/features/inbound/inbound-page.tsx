@@ -1,8 +1,7 @@
 import { useState } from "react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
-import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
@@ -75,21 +74,6 @@ export function InboundPage() {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-            <div className="w-32">
-              <Label htmlFor="inbound-status">상태</Label>
-              <Select
-                id="inbound-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">전체</option>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <div className="w-40">
               <Label htmlFor="inbound-warehouse">창고</Label>
               <Select
@@ -101,6 +85,21 @@ export function InboundPage() {
                 {warehouses.map((w) => (
                   <option key={w.warehouseId} value={w.warehouseId}>
                     {w.warehouseName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="w-32">
+              <Label htmlFor="inbound-status">상태</Label>
+              <Select
+                id="inbound-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">전체</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </Select>
@@ -165,12 +164,14 @@ function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
           <TableHead className="text-right">검수 항목</TableHead>
           <TableHead>도착일시</TableHead>
           <TableHead>입고일시</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {inbounds.map((inbound) => (
-          <TableRow key={inbound.inboundId}>
+          <LinkRow
+            key={inbound.inboundId}
+            to={`/inbounds/${inbound.inboundId}`}
+          >
             <TableCell className="font-mono text-xs">
               {inbound.inboundNo}
             </TableCell>
@@ -189,16 +190,7 @@ function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
             <TableCell className="text-muted-foreground">
               {formatDateTime(inbound.receivedAt)}
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/inbounds/${inbound.inboundId}`} />}
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>

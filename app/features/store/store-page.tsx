@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -173,12 +173,11 @@ function StoreTable({
           <TableHead>담당자</TableHead>
           <TableHead>연락처</TableHead>
           <TableHead>상태</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {stores.map((store) => (
-          <TableRow key={store.storeId}>
+          <LinkRow key={store.storeId} to={`/stores/${store.storeId}`}>
             <TableCell className="font-mono text-xs text-muted-foreground">
               {store.storeCode}
             </TableCell>
@@ -195,16 +194,7 @@ function StoreTable({
             <TableCell>
               <StatusBadge status={store.isActive ? "ACTIVE" : "INACTIVE"} />
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/stores/${store.storeId}`} />}
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>
@@ -310,7 +300,9 @@ function StoreCreateForm({ onClose }: { onClose: () => void }) {
             }
           />
           {getPhoneError(form.contactNumber) && (
-            <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+            <p className="text-sm text-destructive">
+              {getPhoneError(form.contactNumber)}
+            </p>
           )}
         </div>
         {createStore.isError && (

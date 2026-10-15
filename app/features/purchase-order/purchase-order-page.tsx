@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -95,21 +95,6 @@ export function PurchaseOrderPage() {
                 onChange={(e) => setKeyword(e.target.value)}
               />
             </div>
-            <div className="w-32">
-              <Label htmlFor="po-status">상태</Label>
-              <Select
-                id="po-status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">전체</option>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
             <div className="w-40">
               <Label htmlFor="po-warehouse">창고</Label>
               <Select
@@ -136,6 +121,21 @@ export function PurchaseOrderPage() {
                 {suppliers.map((s) => (
                   <option key={s.supplierId} value={s.supplierId}>
                     {s.supplierName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="w-32">
+              <Label htmlFor="po-status">상태</Label>
+              <Select
+                id="po-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="">전체</option>
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </Select>
@@ -200,12 +200,14 @@ function PurchaseOrderTable({ orders }: { orders: PurchaseOrderListItem[] }) {
           <TableHead className="text-right">총액</TableHead>
           <TableHead>입고 예정</TableHead>
           <TableHead>등록일시</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {orders.map((order) => (
-          <TableRow key={order.purchaseOrderId}>
+          <LinkRow
+            key={order.purchaseOrderId}
+            to={`/purchase-orders/${order.purchaseOrderId}`}
+          >
             <TableCell className="font-mono text-xs">
               {order.purchaseOrderNo}
             </TableCell>
@@ -224,18 +226,7 @@ function PurchaseOrderTable({ orders }: { orders: PurchaseOrderListItem[] }) {
             <TableCell className="text-muted-foreground">
               {formatDateTime(order.createdAt)}
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={
-                  <Link to={`/purchase-orders/${order.purchaseOrderId}`} />
-                }
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>

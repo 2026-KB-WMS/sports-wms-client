@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
-import { Link } from "react-router"
 
+import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -137,12 +137,14 @@ function SupplierTable({ suppliers }: { suppliers: Supplier[] }) {
           <TableHead>연락처</TableHead>
           <TableHead>이메일</TableHead>
           <TableHead>상태</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {suppliers.map((supplier) => (
-          <TableRow key={supplier.supplierId}>
+          <LinkRow
+            key={supplier.supplierId}
+            to={`/suppliers/${supplier.supplierId}`}
+          >
             <TableCell className="font-mono text-xs text-muted-foreground">
               {supplier.supplierCode}
             </TableCell>
@@ -161,16 +163,7 @@ function SupplierTable({ suppliers }: { suppliers: Supplier[] }) {
             <TableCell>
               <StatusBadge status={supplier.isActive ? "ACTIVE" : "INACTIVE"} />
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/suppliers/${supplier.supplierId}`} />}
-              >
-                상세
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>
@@ -276,7 +269,9 @@ function SupplierCreateForm({ onClose }: { onClose: () => void }) {
             }
           />
           {getPhoneError(form.contactNumber) && (
-            <p className="text-sm text-destructive">{getPhoneError(form.contactNumber)}</p>
+            <p className="text-sm text-destructive">
+              {getPhoneError(form.contactNumber)}
+            </p>
           )}
         </div>
         <div>

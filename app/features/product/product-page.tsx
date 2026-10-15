@@ -371,8 +371,7 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>SKU 코드</TableHead>
-            <TableHead>SKU명</TableHead>
+            <TableHead>SKU</TableHead>
             <TableHead>상품명</TableHead>
             <TableHead>단위</TableHead>
             <TableHead className="text-right">매입가</TableHead>
@@ -386,10 +385,12 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
         <TableBody>
           {skus.map((sku) => (
             <TableRow key={sku.skuId}>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {sku.skuCode}
+              <TableCell className="font-medium">
+                <span className="block font-mono text-xs font-normal text-muted-foreground">
+                  {sku.skuCode}
+                </span>
+                {sku.skuName}
               </TableCell>
-              <TableCell className="font-medium">{sku.skuName}</TableCell>
               <TableCell className="text-muted-foreground">
                 {sku.productName}
               </TableCell>

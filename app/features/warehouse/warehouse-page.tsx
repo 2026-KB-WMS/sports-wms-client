@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
-import { Link } from "react-router"
 
 import { Badge } from "~/components/ui/badge"
+import { LinkRow } from "~/components/common/link-row"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input } from "~/components/ui/input"
@@ -118,12 +118,14 @@ function WarehouseTable({ warehouses }: { warehouses: Warehouse[] }) {
           <TableHead>연락처</TableHead>
           <TableHead className="text-right">전체 수용량</TableHead>
           <TableHead>상태</TableHead>
-          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
         {warehouses.map((warehouse) => (
-          <TableRow key={warehouse.warehouseId}>
+          <LinkRow
+            key={warehouse.warehouseId}
+            to={`/warehouses/${warehouse.warehouseId}`}
+          >
             <TableCell className="font-mono text-xs text-muted-foreground">
               {warehouse.warehouseCode}
             </TableCell>
@@ -144,16 +146,7 @@ function WarehouseTable({ warehouses }: { warehouses: Warehouse[] }) {
                 {warehouse.isActive ? "사용" : "미사용"}
               </Badge>
             </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="sm"
-                render={<Link to={`/warehouses/${warehouse.warehouseId}`} />}
-              >
-                구역 보기
-              </Button>
-            </TableCell>
-          </TableRow>
+          </LinkRow>
         ))}
       </TableBody>
     </Table>

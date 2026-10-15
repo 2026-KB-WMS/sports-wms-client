@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as inventoryApi from "~/lib/api/inventory"
 
@@ -12,6 +17,17 @@ export function useInventories(
   return useQuery({
     queryKey: ["inventory", "summary", params],
     queryFn: () => inventoryApi.getInventories(params),
+  })
+}
+
+export function useInventoriesBySection(
+  params?: Parameters<typeof inventoryApi.getInventoriesBySection>[0]
+) {
+  return useQuery({
+    queryKey: ["inventory", "by-section", params],
+    queryFn: () => inventoryApi.getInventoriesBySection(params),
+    // 필터를 바꿔도 이전 표를 유지해 로딩 문구로 바뀌며 스크롤이 위로 튀지 않게 한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -67,11 +83,8 @@ export function useLot(lotId: number | null) {
 export function useAdjustInventory() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      body,
-    }: {
-      body: inventoryApi.InventoryAdjustInput
-    }) => inventoryApi.adjustInventory(body),
+    mutationFn: ({ body }: { body: inventoryApi.InventoryAdjustInput }) =>
+      inventoryApi.adjustInventory(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] })
     },
