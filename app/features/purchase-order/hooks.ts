@@ -76,9 +76,35 @@ export function useCreatePurchaseOrder() {
 export function useConfirmPurchaseOrder() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (purchaseOrderId: number) =>
-      purchaseOrderApi.confirmPurchaseOrder(purchaseOrderId),
-    // 409(이미 전이됨 등)여도 최신 상태를 다시 읽는다.
+    mutationFn: ({
+      purchaseOrderId,
+      lines,
+    }: {
+      purchaseOrderId: number
+      lines?: { purchaseOrderLineId: number; supplierId: number }[]
+    }) =>
+      purchaseOrderApi.confirmPurchaseOrder(
+        purchaseOrderId,
+        lines ? { lines } : undefined
+      ),
+    // 409(이미 전이됨 등)여도 최신 상태를 다시 읽는다. 확정하면 공급처 발주서가 생긴다.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
+      queryClient.invalidateQueries({ queryKey: ["supplier-order"] })
+    },
+  })
+}
+
+export function useRejectPurchaseOrder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      purchaseOrderId,
+      reason,
+    }: {
+      purchaseOrderId: number
+      reason: string
+    }) => purchaseOrderApi.rejectPurchaseOrder(purchaseOrderId, reason),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
     },
@@ -99,8 +125,10 @@ export function useCancelPurchaseOrder() {
         purchaseOrderId,
         reason ? { reason } : undefined
       ),
+    // 확정된 요청을 취소하면 공급처 발주서도 함께 취소된다.
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
+      queryClient.invalidateQueries({ queryKey: ["supplier-order"] })
     },
   })
 }

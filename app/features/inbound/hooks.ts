@@ -93,6 +93,7 @@ export function useCompleteInbound() {
       queryClient.invalidateQueries({ queryKey: ["inventory"] })
       queryClient.invalidateQueries({ queryKey: ["warehouse", "sections"] })
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
+      queryClient.invalidateQueries({ queryKey: ["supplier-order"] })
     },
   })
 }
@@ -110,6 +111,7 @@ export function useCancelInbound() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["inbound"] })
       queryClient.invalidateQueries({ queryKey: ["purchase-order"] })
+      queryClient.invalidateQueries({ queryKey: ["supplier-order"] })
     },
   })
 }

@@ -252,3 +252,12 @@ export function useConnectSkuOptions() {
     },
   })
 }
+
+/** 확정 화면에서 라인의 SKU별 공급처 후보를 읽는다. 매핑은 거의 바뀌지 않아 SKU별로 캐시한다. */
+export function useSkuSuppliers(skuId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ["product", "sku-suppliers", skuId],
+    queryFn: () => productApi.getSkuSuppliers(skuId as number),
+    enabled: enabled && skuId != null,
+  })
+}

@@ -15,6 +15,9 @@ export interface InboundListItem {
   inboundNo: string
   purchaseOrderId: number
   purchaseOrderNo: string
+  supplierOrderId: number
+  supplierOrderNo: string
+  /** 공급처 발주서의 공급처 */
   supplierId: number
   supplierName: string
   warehouseId: number
@@ -83,8 +86,8 @@ export interface AssignableSection {
 }
 
 export interface InboundCreateInput {
-  /** CONFIRMED 발주만 */
-  purchaseOrderId: number
+  /** ISSUED·PARTIALLY_RECEIVED 공급처 발주서만 */
+  supplierOrderId: number
   /** 현재 이전 시각. 생략하면 요청 시각 */
   arrivedAt?: string
   note?: string
@@ -111,6 +114,7 @@ export function getInbounds(params?: {
   status?: InboundStatus
   warehouseId?: number
   purchaseOrderId?: number
+  supplierOrderId?: number
   keyword?: string
   arrivedFrom?: string
   arrivedTo?: string
@@ -142,7 +146,10 @@ export function getDefectSections(inboundId: number) {
   )
 }
 
-/** 창고 관리자만. 확정(CONFIRMED)된 발주에 대해서만, 같은 발주에는 진행 중 입고를 1건만 둘 수 있다. */
+/**
+ * 창고 관리자만. 진행 중(ISSUED·PARTIALLY_RECEIVED)인 공급처 발주서에 대해서만 등록한다.
+ * 같은 발주서에는 진행 중 입고를 1건만 둘 수 있고(409 INBOUND_IN_PROGRESS), 다른 발주서의 입고는 병렬이다.
+ */
 export function createInbound(body: InboundCreateInput) {
   return apiClient.post<Inbound>("/api/v1/inbounds", body)
 }
@@ -165,6 +172,7 @@ export function completeInbound(inboundId: number) {
     inboundNo: string
     status: InboundStatus
     receivedAt: string
+    supplierOrder: { supplierOrderId: number; status: string }
     purchaseOrder: { purchaseOrderId: number; status: string }
   }>(`/api/v1/inbounds/${inboundId}/complete`, undefined)
 }

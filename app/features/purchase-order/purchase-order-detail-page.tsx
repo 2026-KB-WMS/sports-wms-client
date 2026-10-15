@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ConfirmDialog } from "~/components/common/confirm-dialog"
+import { LinkRow } from "~/components/common/link-row"
 import { ReasonDialog } from "~/components/common/reason-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -14,18 +14,17 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { getErrorMessage } from "~/lib/api/error-messages"
-import type { PurchaseOrder } from "~/lib/api/purchase-order"
+import type { PurchaseOrder, PurchaseOrderLine } from "~/lib/api/purchase-order"
 import { useCurrentUser } from "~/lib/current-user"
-
-import { InboundRegisterDialog } from "~/features/inbound/inbound-register-dialog"
 
 import { formatDateTime, formatWon } from "./format"
 import {
   useCancelPurchaseOrder,
-  useConfirmPurchaseOrder,
   usePurchaseOrder,
   usePurchaseOrderLines,
+  useRejectPurchaseOrder,
 } from "./hooks"
+import { PurchaseOrderConfirmDialog } from "./purchase-order-confirm-dialog"
 
 export function PurchaseOrderDetailPage({
   purchaseOrderId,
@@ -47,7 +46,10 @@ export function PurchaseOrderDetailPage({
           {getErrorMessage(orderQuery.error, "발주를 불러오지 못했습니다.")}
         </p>
       )}
-      {order && <OrderHeaderCard order={order} />}
+      {order && <OrderHeaderCard order={order} lines={lines} />}
+      {order && order.supplierOrders.length > 0 && (
+        <SupplierOrdersCard order={order} />
+      )}
 
       <Card>
         <CardHeader>
@@ -69,6 +71,7 @@ export function PurchaseOrderDetailPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>SKU</TableHead>
+                  <TableHead>공급처</TableHead>
                   <TableHead className="text-right">발주 수량</TableHead>
                   <TableHead className="text-right">입고 수량</TableHead>
                   <TableHead className="text-right">잔여</TableHead>
@@ -85,6 +88,9 @@ export function PurchaseOrderDetailPage({
                         {line.skuCode}
                       </span>
                       {line.skuName}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {line.supplierName ?? "-"}
                     </TableCell>
                     <TableCell className="text-right">
                       {line.expectedQuantity}
@@ -115,45 +121,50 @@ export function PurchaseOrderDetailPage({
   )
 }
 
-function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
+function OrderHeaderCard({
+  order,
+  lines,
+}: {
+  order: PurchaseOrder
+  lines: PurchaseOrderLine[]
+}) {
   const { userId, role } = useCurrentUser()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
-  const [inboundOpen, setInboundOpen] = useState(false)
-  const confirm = useConfirmPurchaseOrder()
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const reject = useRejectPurchaseOrder()
   const cancel = useCancelPurchaseOrder()
 
-  // 확정은 본사 관리자만. 취소는 REQUESTED면 작성자(창고 관리자), CONFIRMED면 본사 관리자만 가능하다.
+  // 확정·반려는 본사 관리자만, REQUESTED에서만 한다. 취소는 REQUESTED면 작성자(창고 관리자), CONFIRMED면 본사 관리자만 가능하다.
   const canConfirm = role === "HQ_ADMIN" && order.status === "REQUESTED"
+  const canReject = canConfirm
   const canCancel =
     (order.status === "REQUESTED" &&
       role === "WAREHOUSE_MANAGER" &&
       order.createdBy === userId) ||
     (order.status === "CONFIRMED" && role === "HQ_ADMIN")
   const reasonRequired = order.status === "CONFIRMED"
-  // 입고는 확정된 발주에 대해서만, 창고 관리자가 등록한다.
-  const canRegisterInbound =
-    role === "WAREHOUSE_MANAGER" && order.status === "CONFIRMED"
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="font-mono">{order.purchaseOrderNo}</CardTitle>
         <div className="flex gap-2">
-          {canRegisterInbound && (
-            <Button size="sm" onClick={() => setInboundOpen(true)}>
-              입고 등록
+          {canConfirm && (
+            <Button size="sm" onClick={() => setConfirmOpen(true)}>
+              발주 확정
             </Button>
           )}
-          {canConfirm && (
+          {canReject && (
             <Button
+              variant="outline"
               size="sm"
               onClick={() => {
-                confirm.reset()
-                setConfirmOpen(true)
+                reject.reset()
+                setRejectOpen(true)
               }}
             >
-              발주 확정
+              반려
             </Button>
           )}
           {canCancel && (
@@ -185,7 +196,9 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
         </p>
         <p>
           <span className="text-muted-foreground">공급처 </span>
-          {order.supplierName}
+          {order.supplierOrders.length > 0
+            ? order.supplierOrders.map((s) => s.supplierName).join(", ")
+            : "미정 (본사 확정 시 지정)"}
         </p>
         <p>
           <span className="text-muted-foreground">입고 예정 </span>
@@ -202,6 +215,12 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
             {order.note}
           </p>
         )}
+        {order.rejectReason && (
+          <p className="sm:col-span-2">
+            <span className="text-muted-foreground">반려 사유 </span>
+            {order.rejectReason}
+          </p>
+        )}
         {order.cancelReason && (
           <p className="sm:col-span-2">
             <span className="text-muted-foreground">취소 사유 </span>
@@ -210,28 +229,32 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
         )}
       </CardContent>
 
-      <InboundRegisterDialog
-        open={inboundOpen}
-        onOpenChange={setInboundOpen}
-        purchaseOrderId={order.purchaseOrderId}
-      />
-
-      <ConfirmDialog
+      <PurchaseOrderConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="발주 확정"
-        description="확정하면 공급처·품목·수량을 수정할 수 없고, 변경이 필요하면 취소 후 다시 등록해야 합니다. 확정된 발주에 대해서만 입고를 등록할 수 있습니다."
-        confirmLabel="확정"
-        isPending={confirm.isPending}
+        purchaseOrderId={order.purchaseOrderId}
+        lines={lines}
+      />
+
+      <ReasonDialog
+        open={rejectOpen}
+        onOpenChange={setRejectOpen}
+        title="발주 반려"
+        description="반려하면 확정·취소·입고를 할 수 없습니다. 창고 관리자가 확인할 수 있도록 사유를 입력해 주세요."
+        required
+        submitLabel="반려"
+        destructive
+        isPending={reject.isPending}
         error={
-          confirm.isError
-            ? getErrorMessage(confirm.error, "확정에 실패했습니다.")
+          reject.isError
+            ? getErrorMessage(reject.error, "반려에 실패했습니다.")
             : null
         }
-        onConfirm={() =>
-          confirm.mutate(order.purchaseOrderId, {
-            onSuccess: () => setConfirmOpen(false),
-          })
+        onSubmit={(reason) =>
+          reject.mutate(
+            { purchaseOrderId: order.purchaseOrderId, reason },
+            { onSuccess: () => setRejectOpen(false) }
+          )
         }
       />
 
@@ -241,7 +264,7 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
         title="발주 취소"
         description={
           reasonRequired
-            ? "확정된 발주를 취소하려면 사유를 입력해야 합니다. 취소되지 않은 입고가 있으면 취소할 수 없습니다."
+            ? "확정된 발주를 취소하려면 사유를 입력해야 합니다. 공급처 발주서도 함께 취소되며, 취소되지 않은 입고가 있으면 취소할 수 없습니다."
             : "확정 전 발주를 취소합니다."
         }
         required={reasonRequired}
@@ -263,6 +286,50 @@ function OrderHeaderCard({ order }: { order: PurchaseOrder }) {
           )
         }
       />
+    </Card>
+  )
+}
+
+/** 확정으로 생긴 공급처 발주서. 입고는 발주서 단위로 등록한다. */
+function SupplierOrdersCard({ order }: { order: PurchaseOrder }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>공급처 발주서</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>발주서 번호</TableHead>
+              <TableHead>공급처</TableHead>
+              <TableHead>상태</TableHead>
+              <TableHead className="text-right">항목 수</TableHead>
+              <TableHead className="text-right">금액</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {order.supplierOrders.map((so) => (
+              <LinkRow
+                key={so.supplierOrderId}
+                to={`/supplier-orders/${so.supplierOrderId}`}
+              >
+                <TableCell className="font-mono text-xs">
+                  {so.supplierOrderNo}
+                </TableCell>
+                <TableCell>{so.supplierName}</TableCell>
+                <TableCell>
+                  <StatusBadge status={so.status} />
+                </TableCell>
+                <TableCell className="text-right">{so.lineCount}</TableCell>
+                <TableCell className="text-right">
+                  {formatWon(so.totalAmount)}
+                </TableCell>
+              </LinkRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   )
 }

@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { useSkus } from "~/features/product/hooks"
-import { useSuppliers } from "~/features/supplier/hooks"
 import { getErrorMessage } from "~/lib/api/error-messages"
 
 import { formatWon } from "./format"
@@ -32,14 +31,15 @@ interface DraftLine {
 
 const NOTE_MAX_LENGTH = 1000
 
-/** 창고 관리자가 새 발주를 등록한다. 단가는 서버가 SKU 현재 매입가로 채우므로 입력받지 않는다. */
+/**
+ * 창고 관리자가 SKU·수량만 요청한다. 공급처는 본사가 확정할 때 라인별로 지정하고,
+ * 단가는 서버가 SKU 현재 매입가로 채우므로 입력받지 않는다.
+ */
 export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
   const createOrder = useCreatePurchaseOrder()
   const warehouses = useSelectableWarehouses()
-  const suppliers = useSuppliers().data?.items ?? []
 
   const [warehouseId, setWarehouseId] = useState("")
-  const [supplierId, setSupplierId] = useState("")
   const [expectedAt, setExpectedAt] = useState("")
   const [note, setNote] = useState("")
   const [lines, setLines] = useState<DraftLine[]>([])
@@ -50,7 +50,6 @@ export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
   )
   const canSubmit =
     warehouseId !== "" &&
-    supplierId !== "" &&
     lines.length > 0 &&
     lines.every(
       (l) => Number.isInteger(Number(l.quantity)) && Number(l.quantity) > 0
@@ -61,7 +60,6 @@ export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
     createOrder.mutate(
       {
         warehouseId: Number(warehouseId),
-        supplierId: Number(supplierId),
         // datetime-local 값(YYYY-MM-DDTHH:mm)에 초를 붙여 오프셋 없는 KST로 보낸다.
         expectedAt: expectedAt ? `${expectedAt}:00` : undefined,
         note: note.trim() || undefined,
@@ -77,7 +75,7 @@ export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>새 창고 발주 등록</CardTitle>
+        <CardTitle>새 창고 발주 요청</CardTitle>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -88,6 +86,9 @@ export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
         </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        <p className="text-xs text-muted-foreground">
+          공급처는 본사가 요청을 확정할 때 항목별로 지정합니다.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="new-po-warehouse">입고 창고</Label>
@@ -100,21 +101,6 @@ export function PurchaseOrderCreateForm({ onClose }: { onClose: () => void }) {
               {warehouses.map((w) => (
                 <option key={w.warehouseId} value={w.warehouseId}>
                   {w.warehouseName}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <Label htmlFor="new-po-supplier">공급처</Label>
-            <Select
-              id="new-po-supplier"
-              value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
-            >
-              <option value="">선택</option>
-              {suppliers.map((s) => (
-                <option key={s.supplierId} value={s.supplierId}>
-                  {s.supplierName}
                 </option>
               ))}
             </Select>

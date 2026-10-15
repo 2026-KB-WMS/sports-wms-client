@@ -62,11 +62,11 @@ export function InboundPage() {
         <CardHeader>
           <CardTitle>입고 목록</CardTitle>
           <p className="text-sm text-muted-foreground">
-            입고는 확정된 창고 발주의 상세 화면에서 등록합니다.
+            입고는 공급처 발주서의 상세 화면에서 등록합니다.
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-4">
             <div className="w-48">
-              <Label htmlFor="inbound-keyword">입고·발주 번호</Label>
+              <Label htmlFor="inbound-keyword">입고·발주서 번호</Label>
               <Input
                 id="inbound-keyword"
                 placeholder="IB-20261005-0001"
@@ -157,7 +157,7 @@ function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>입고 번호</TableHead>
-          <TableHead>발주 번호</TableHead>
+          <TableHead>발주서 번호</TableHead>
           <TableHead>창고</TableHead>
           <TableHead>공급처</TableHead>
           <TableHead>상태</TableHead>
@@ -176,7 +176,7 @@ function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
               {inbound.inboundNo}
             </TableCell>
             <TableCell className="font-mono text-xs text-muted-foreground">
-              {inbound.purchaseOrderNo}
+              {inbound.supplierOrderNo}
             </TableCell>
             <TableCell>{inbound.warehouseName}</TableCell>
             <TableCell>{inbound.supplierName}</TableCell>

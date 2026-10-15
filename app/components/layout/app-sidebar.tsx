@@ -17,6 +17,7 @@ import {
   Users,
   LogOut,
   ChevronDown,
+  FileText,
 } from "lucide-react"
 
 import { ChangePasswordDialog } from "~/features/auth/change-password-dialog"
@@ -92,6 +93,13 @@ const navGroups: { label: string; items: NavItem[] }[] = [
         label: "창고 발주",
         icon: ClipboardList,
         href: "/purchase-orders",
+        enabled: true,
+        roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
+      },
+      {
+        label: "공급처 발주서",
+        icon: FileText,
+        href: "/supplier-orders",
         enabled: true,
         roles: ["HQ_ADMIN", "WAREHOUSE_MANAGER"],
       },
