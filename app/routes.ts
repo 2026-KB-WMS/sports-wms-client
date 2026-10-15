@@ -15,6 +15,8 @@ export default [
   route("suppliers/:supplierId", "routes/supplier-detail.tsx"),
   route("purchase-orders", "routes/purchase-orders.tsx"),
   route("purchase-orders/:purchaseOrderId", "routes/purchase-order-detail.tsx"),
+  route("supplier-orders", "routes/supplier-orders.tsx"),
+  route("supplier-orders/:supplierOrderId", "routes/supplier-order-detail.tsx"),
   route("inbounds", "routes/inbounds.tsx"),
   route("inbounds/:inboundId", "routes/inbound-detail.tsx"),
   route("store-orders", "routes/store-orders.tsx"),

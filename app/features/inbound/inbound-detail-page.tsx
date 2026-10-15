@@ -61,7 +61,7 @@ export function InboundDetailPage({ inboundId }: { inboundId: number }) {
             {inspecting ? (
               <InboundInspectForm
                 inboundId={inboundId}
-                purchaseOrderId={inbound.purchaseOrderId}
+                supplierOrderId={inbound.supplierOrderId}
                 savedItems={items}
                 onDone={() => setInspecting(false)}
               />
@@ -156,7 +156,16 @@ function InboundHeaderCard({
           <StatusBadge status={inbound.status} />
         </p>
         <p>
-          <span className="text-muted-foreground">발주 </span>
+          <span className="text-muted-foreground">공급처 발주서 </span>
+          <Link
+            className="underline underline-offset-2"
+            to={`/supplier-orders/${inbound.supplierOrderId}`}
+          >
+            {inbound.supplierOrderNo}
+          </Link>
+        </p>
+        <p>
+          <span className="text-muted-foreground">창고 발주 요청 </span>
           <Link
             className="underline underline-offset-2"
             to={`/purchase-orders/${inbound.purchaseOrderId}`}

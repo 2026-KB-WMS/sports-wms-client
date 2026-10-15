@@ -30,6 +30,9 @@ const STATUS_STYLES: Record<string, StatusStyle> = {
   CANCELED: { label: "취소됨", variant: "destructive" },
   REJECTED: { label: "반려됨", variant: "destructive" },
 
+  // 공급처 발주서(ISSUED 이후 PARTIALLY_RECEIVED·COMPLETED·CANCELED는 위 공통 코드를 쓴다)
+  ISSUED: { label: "발행", variant: "default" },
+
   // 입고
   ARRIVED: { label: "도착", variant: "secondary" },
   INSPECTING: { label: "검수 중", variant: "default" },

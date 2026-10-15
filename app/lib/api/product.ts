@@ -382,3 +382,21 @@ export function createOptionValue(
     body
   )
 }
+
+export interface SkuSupplier {
+  supplierId: number
+  supplierCode: string
+  supplierName: string
+  isActive: boolean
+  createdAt: string
+}
+
+/**
+ * SKU에 매핑된 공급처 목록(본사·창고 관리자, 점주는 403). 확정 때 라인별 공급처 후보로 쓴다.
+ * 등록·삭제는 본사 관리자 전용이며 별도 화면에서 다룬다.
+ */
+export function getSkuSuppliers(skuId: number) {
+  return apiClient.get<ListData<SkuSupplier>>(
+    `/api/v1/products/skus/${skuId}/suppliers`
+  )
+}

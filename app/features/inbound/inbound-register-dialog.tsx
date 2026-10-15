@@ -26,15 +26,15 @@ function nowForInput() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** 확정된 발주에 대해 입고(도착)를 등록한다. 성공하면 입고 상세로 이동한다. */
+/** 진행 중인 공급처 발주서에 대해 입고(도착)를 등록한다. 성공하면 입고 상세로 이동한다. */
 export function InboundRegisterDialog({
   open,
   onOpenChange,
-  purchaseOrderId,
+  supplierOrderId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  purchaseOrderId: number
+  supplierOrderId: number
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,7 +42,7 @@ export function InboundRegisterDialog({
         {/* 열릴 때마다 새로 마운트되어 입력값이 비워진다. */}
         {open && (
           <RegisterForm
-            purchaseOrderId={purchaseOrderId}
+            supplierOrderId={supplierOrderId}
             onOpenChange={onOpenChange}
           />
         )}
@@ -52,10 +52,10 @@ export function InboundRegisterDialog({
 }
 
 function RegisterForm({
-  purchaseOrderId,
+  supplierOrderId,
   onOpenChange,
 }: {
-  purchaseOrderId: number
+  supplierOrderId: number
   onOpenChange: (open: boolean) => void
 }) {
   const navigate = useNavigate()
@@ -66,7 +66,7 @@ function RegisterForm({
   function handleSubmit() {
     createInbound.mutate(
       {
-        purchaseOrderId,
+        supplierOrderId,
         // 비우면 서버가 요청 시각으로 기록한다.
         arrivedAt: arrivedAt ? `${arrivedAt}:00` : undefined,
         note: note.trim() || undefined,
@@ -86,7 +86,8 @@ function RegisterForm({
         <DialogTitle>입고 등록</DialogTitle>
         <DialogDescription>
           물품이 도착했음을 등록합니다. 검수 항목과 재고 반영은 다음 단계에서
-          합니다. 같은 발주에는 완료되지 않은 입고를 한 건만 둘 수 있습니다.
+          합니다. 같은 공급처 발주서에는 완료되지 않은 입고를 한 건만 둘 수
+          있습니다.
         </DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-4">

@@ -4,11 +4,11 @@ import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Select } from "~/components/ui/select"
-import { usePurchaseOrderLines } from "~/features/purchase-order/hooks"
+import { useSupplierOrder } from "~/features/supplier-order/hooks"
 import { formatWon } from "~/features/purchase-order/format"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { InboundLine, InspectLineInput } from "~/lib/api/inbound"
-import type { PurchaseOrderLine } from "~/lib/api/purchase-order"
+import type { SupplierOrderLine } from "~/lib/api/supplier-order"
 
 import {
   useAssignableSections,
@@ -53,7 +53,7 @@ function fromSaved(item: InboundLine): DraftLine {
   }
 }
 
-function emptyLine(poLine?: PurchaseOrderLine): DraftLine {
+function emptyLine(poLine?: SupplierOrderLine): DraftLine {
   return {
     key: nextKey++,
     purchaseOrderLineId: poLine ? String(poLine.purchaseOrderLineId) : "",
@@ -74,7 +74,7 @@ const isPositiveInt = (v: string) =>
   Number.isInteger(Number(v)) && Number(v) > 0
 
 /** 서버 검증 중 화면에서 미리 알 수 있는 것만 확인한다. 나머지는 서버 오류를 그대로 보여준다. */
-function validate(lines: DraftLine[], poLines: PurchaseOrderLine[]) {
+function validate(lines: DraftLine[], poLines: SupplierOrderLine[]) {
   if (lines.length === 0) return "검수 항목을 추가해 주세요."
   const seen = new Set<string>()
   const receivedByPoLine = new Map<number, number>()
@@ -123,17 +123,18 @@ function validate(lines: DraftLine[], poLines: PurchaseOrderLine[]) {
  */
 export function InboundInspectForm({
   inboundId,
-  purchaseOrderId,
+  supplierOrderId,
   savedItems,
   onDone,
 }: {
   inboundId: number
-  purchaseOrderId: number
+  supplierOrderId: number
   savedItems: InboundLine[]
   onDone: () => void
 }) {
   const inspect = useInspectInbound()
-  const poLines = usePurchaseOrderLines(purchaseOrderId).data?.items ?? []
+  // 검수 항목은 이 입고의 공급처 발주서에 속한 라인만 고를 수 있다(다른 발주서의 라인은 서버가 400).
+  const poLines = useSupplierOrder(supplierOrderId).data?.lines ?? []
   const acceptedSections = useAssignableSections(inboundId).data?.items ?? []
   const defectSections = useDefectSections(inboundId).data?.items ?? []
 

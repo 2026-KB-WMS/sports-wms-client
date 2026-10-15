@@ -33,6 +33,7 @@ const STATUS_OPTIONS: { value: PurchaseOrderStatus; label: string }[] = [
   { value: "CONFIRMED", label: "확정" },
   { value: "COMPLETED", label: "입고 완료" },
   { value: "CANCELED", label: "취소" },
+  { value: "REJECTED", label: "반려됨" },
 ]
 
 export function PurchaseOrderPage() {
@@ -212,7 +213,11 @@ function PurchaseOrderTable({ orders }: { orders: PurchaseOrderListItem[] }) {
               {order.purchaseOrderNo}
             </TableCell>
             <TableCell>{order.warehouseName}</TableCell>
-            <TableCell>{order.supplierName}</TableCell>
+            <TableCell className="text-muted-foreground">
+              {order.suppliers.length > 0
+                ? order.suppliers.map((s) => s.supplierName).join(", ")
+                : "미정"}
+            </TableCell>
             <TableCell>
               <StatusBadge status={order.status} />
             </TableCell>
