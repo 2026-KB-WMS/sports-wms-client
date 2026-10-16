@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { X } from "lucide-react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { ReasonDialog } from "~/components/common/reason-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Badge } from "~/components/ui/badge"
@@ -50,6 +51,8 @@ import {
   useLowStock,
 } from "./hooks"
 
+type Paging = ReturnType<typeof usePaging>
+
 type Tab = "by-section" | "summary" | "low-stock" | "by-lot" | "lots"
 
 const tabs: { key: Tab; label: string }[] = [
@@ -67,10 +70,17 @@ export function InventoryPage() {
     null
   )
 
-  const summaryQuery = useInventories({ keyword: keyword || undefined })
-  const lowStockQuery = useLowStock({ keyword: keyword || undefined })
-  const byLotQuery = useInventoriesByLot()
-  const lotsQuery = useLots({ keyword: keyword || undefined })
+  const keywordFilter = { keyword: keyword || undefined }
+  const summaryPaging = usePaging(JSON.stringify(keywordFilter))
+  const lotsPaging = usePaging(JSON.stringify(keywordFilter))
+  const byLotPaging = usePaging("")
+  const summaryQuery = useInventories({
+    ...keywordFilter,
+    ...summaryPaging.params,
+  })
+  const lowStockQuery = useLowStock(keywordFilter)
+  const byLotQuery = useInventoriesByLot(byLotPaging.params)
+  const lotsQuery = useLots({ ...keywordFilter, ...lotsPaging.params })
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -112,12 +122,20 @@ export function InventoryPage() {
         </CardHeader>
         <CardContent>
           {tab === "by-section" && <BySectionPanel />}
-          {tab === "summary" && <SummaryTable query={summaryQuery} />}
+          {tab === "summary" && (
+            <SummaryTable query={summaryQuery} paging={summaryPaging} />
+          )}
           {tab === "low-stock" && <LowStockTable query={lowStockQuery} />}
           {tab === "by-lot" && (
-            <ByLotTable query={byLotQuery} onAdjust={setAdjustTarget} />
+            <ByLotTable
+              query={byLotQuery}
+              paging={byLotPaging}
+              onAdjust={setAdjustTarget}
+            />
           )}
-          {tab === "lots" && <LotsTable query={lotsQuery} />}
+          {tab === "lots" && (
+            <LotsTable query={lotsQuery} paging={lotsPaging} />
+          )}
         </CardContent>
       </Card>
     </div>
@@ -182,19 +200,24 @@ function BySectionPanel() {
   const sections = useSectionsByWarehouse(
     draft.warehouseId ? Number(draft.warehouseId) : null
   )
-  const query = useInventoriesBySection({
+  const filters = {
     warehouseId: draft.warehouseId ? Number(draft.warehouseId) : undefined,
     sectionId: draft.sectionId ? Number(draft.sectionId) : undefined,
     categoryId: draft.categoryId ? Number(draft.categoryId) : undefined,
     keyword: draft.keyword.trim() || undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useInventoriesBySection({ ...filters, ...paging.params })
   const items: InventorySectionSummary[] = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
 
   const state = queryState({
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    isEmpty: items.length === 0,
+    isEmpty: (pageInfo?.totalElements ?? items.length) === 0,
     emptyMessage: "조건에 맞는 재고가 없습니다.",
   })
 
@@ -264,15 +287,51 @@ function BySectionPanel() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>창고</TableHead>
-              <TableHead>구역</TableHead>
-              <TableHead>SKU</TableHead>
+              <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+                창고
+              </SortableHead>
+              <SortableHead field="sectionCode" sort={sort} onSort={onSort}>
+                구역
+              </SortableHead>
+              <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+                SKU
+              </SortableHead>
               <TableHead>단위</TableHead>
-              <TableHead>카테고리</TableHead>
-              <TableHead className="text-right">보유</TableHead>
-              <TableHead className="text-right">가용</TableHead>
-              <TableHead className="text-right">할당</TableHead>
-              <TableHead className="text-right">불량</TableHead>
+              <SortableHead field="categoryName" sort={sort} onSort={onSort}>
+                카테고리
+              </SortableHead>
+              <SortableHead
+                field="totalQuantity"
+                sort={sort}
+                onSort={onSort}
+                className="text-right"
+              >
+                보유
+              </SortableHead>
+              <SortableHead
+                field="availableQuantity"
+                sort={sort}
+                onSort={onSort}
+                className="text-right"
+              >
+                가용
+              </SortableHead>
+              <SortableHead
+                field="allocatedQuantity"
+                sort={sort}
+                onSort={onSort}
+                className="text-right"
+              >
+                할당
+              </SortableHead>
+              <SortableHead
+                field="defectiveQuantity"
+                sort={sort}
+                onSort={onSort}
+                className="text-right"
+              >
+                불량
+              </SortableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -318,6 +377,13 @@ function BySectionPanel() {
           </TableBody>
         </Table>
       )}
+      {pageInfo && pageInfo.totalElements > 0 && (
+        <Pager
+          pageInfo={pageInfo}
+          onPage={paging.setPage}
+          onSize={paging.setSize}
+        />
+      )}
       <Dialog
         open={lotTarget !== null}
         onOpenChange={(open) => !open && setLotTarget(null)}
@@ -347,6 +413,7 @@ function SectionLots({ item }: { item: InventorySectionSummary }) {
     warehouseId: item.warehouseId,
     sectionId: item.sectionId,
     skuId: item.skuId,
+    size: 100,
   })
   const lots = query.data?.items ?? []
   const state = queryState({
@@ -404,55 +471,103 @@ function SectionLots({ item }: { item: InventorySectionSummary }) {
   )
 }
 
-function SummaryTable({ query }: { query: ReturnType<typeof useInventories> }) {
+function SummaryTable({
+  query,
+  paging,
+}: {
+  query: ReturnType<typeof useInventories>
+  paging: Paging
+}) {
   const items: InventorySkuSummary[] = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
   const state = queryState({
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    isEmpty: items.length === 0,
+    isEmpty: (pageInfo?.totalElements ?? items.length) === 0,
     emptyMessage: "재고 데이터가 없습니다.",
   })
   if (state) return state
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>SKU</TableHead>
-          <TableHead>단위</TableHead>
-          <TableHead className="text-right">총 수량</TableHead>
-          <TableHead className="text-right">가용</TableHead>
-          <TableHead className="text-right">할당</TableHead>
-          <TableHead className="text-right">불량</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((item) => (
-          <TableRow key={item.skuId}>
-            <TableCell className="font-medium">
-              <span className="block font-mono text-xs font-normal text-muted-foreground">
-                {item.skuCode}
-              </span>
-              {item.skuName}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {item.unit ?? "-"}
-            </TableCell>
-            <TableCell className="text-right">{item.totalQuantity}</TableCell>
-            <TableCell className="text-right">
-              {item.availableQuantity}
-            </TableCell>
-            <TableCell className="text-right">
-              {item.allocatedQuantity}
-            </TableCell>
-            <TableCell className="text-right">
-              {item.defectiveQuantity}
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+              SKU
+            </SortableHead>
+            <TableHead>단위</TableHead>
+            <SortableHead
+              field="totalQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              총 수량
+            </SortableHead>
+            <SortableHead
+              field="availableQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              가용
+            </SortableHead>
+            <SortableHead
+              field="allocatedQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              할당
+            </SortableHead>
+            <SortableHead
+              field="defectiveQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              불량
+            </SortableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.skuId}>
+              <TableCell className="font-medium">
+                <span className="block font-mono text-xs font-normal text-muted-foreground">
+                  {item.skuCode}
+                </span>
+                {item.skuName}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {item.unit ?? "-"}
+              </TableCell>
+              <TableCell className="text-right">{item.totalQuantity}</TableCell>
+              <TableCell className="text-right">
+                {item.availableQuantity}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.allocatedQuantity}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.defectiveQuantity}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {pageInfo && pageInfo.totalElements > 0 && (
+        <Pager
+          pageInfo={pageInfo}
+          onPage={paging.setPage}
+          onSize={paging.setSize}
+        />
+      )}
+    </>
   )
 }
 
@@ -508,78 +623,133 @@ function LowStockTable({ query }: { query: ReturnType<typeof useLowStock> }) {
 
 function ByLotTable({
   query,
+  paging,
   onAdjust,
 }: {
   query: ReturnType<typeof useInventoriesByLot>
+  paging: Paging
   onAdjust: (target: InventoryLotView) => void
 }) {
   const items: InventoryLotView[] = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
   const state = queryState({
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    isEmpty: items.length === 0,
+    isEmpty: (pageInfo?.totalElements ?? items.length) === 0,
     emptyMessage: "로트별 재고 데이터가 없습니다.",
   })
   if (state) return state
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>로트 번호</TableHead>
-          <TableHead>SKU</TableHead>
-          <TableHead>구역</TableHead>
-          <TableHead className="text-right">보유</TableHead>
-          <TableHead className="text-right">할당</TableHead>
-          <TableHead className="text-right">가용</TableHead>
-          <TableHead>품질</TableHead>
-          <TableHead>유효기한</TableHead>
-          <TableHead>최근 실사</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((item) => (
-          <TableRow key={item.inventoryLotId}>
-            <TableCell className="font-mono text-xs text-muted-foreground">
-              {item.lotNumber}
-            </TableCell>
-            <TableCell className="font-medium">{item.skuName}</TableCell>
-            <TableCell className="text-muted-foreground">
-              {item.sectionName}
-            </TableCell>
-            <TableCell className="text-right">{item.onHandQuantity}</TableCell>
-            <TableCell className="text-right">
-              {item.allocatedQuantity}
-            </TableCell>
-            <TableCell className="text-right">
-              {item.availableQuantity}
-            </TableCell>
-            <TableCell>
-              <Badge
-                variant={
-                  item.qualityStatus === "AVAILABLE" ? "outline" : "destructive"
-                }
-              >
-                {item.qualityStatus === "AVAILABLE" ? "가용" : "불량"}
-              </Badge>
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {item.expiryDate ?? "-"}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
-              {formatDateTime(item.lastCountedAt)}
-            </TableCell>
-            <TableCell>
-              <Button variant="ghost" size="sm" onClick={() => onAdjust(item)}>
-                조정
-              </Button>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <SortableHead field="lotNumber" sort={sort} onSort={onSort}>
+              로트 번호
+            </SortableHead>
+            <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+              SKU
+            </SortableHead>
+            <SortableHead field="sectionCode" sort={sort} onSort={onSort}>
+              구역
+            </SortableHead>
+            <SortableHead
+              field="onHandQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              보유
+            </SortableHead>
+            <SortableHead
+              field="allocatedQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              할당
+            </SortableHead>
+            <SortableHead
+              field="availableQuantity"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              가용
+            </SortableHead>
+            <SortableHead field="qualityStatus" sort={sort} onSort={onSort}>
+              품질
+            </SortableHead>
+            <SortableHead field="expiryDate" sort={sort} onSort={onSort}>
+              유효기한
+            </SortableHead>
+            <SortableHead field="lastCountedAt" sort={sort} onSort={onSort}>
+              최근 실사
+            </SortableHead>
+            <TableHead />
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <TableRow key={item.inventoryLotId}>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {item.lotNumber}
+              </TableCell>
+              <TableCell className="font-medium">{item.skuName}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {item.sectionName}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.onHandQuantity}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.allocatedQuantity}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.availableQuantity}
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={
+                    item.qualityStatus === "AVAILABLE"
+                      ? "outline"
+                      : "destructive"
+                  }
+                >
+                  {item.qualityStatus === "AVAILABLE" ? "가용" : "불량"}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {item.expiryDate ?? "-"}
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {formatDateTime(item.lastCountedAt)}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onAdjust(item)}
+                >
+                  조정
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {pageInfo && pageInfo.totalElements > 0 && (
+        <Pager
+          pageInfo={pageInfo}
+          onPage={paging.setPage}
+          onSize={paging.setSize}
+        />
+      )}
+    </>
   )
 }
 
@@ -600,7 +770,13 @@ const LOT_TRANSITIONS: Record<
   DISPOSED: [],
 }
 
-function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
+function LotsTable({
+  query,
+  paging,
+}: {
+  query: ReturnType<typeof useLots>
+  paging: Paging
+}) {
   const { role } = useCurrentUser()
   const changeStatus = useChangeLotStatus()
   const [target, setTarget] = useState<{
@@ -611,11 +787,14 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
   const canChange = role === "HQ_ADMIN"
 
   const items: LotSummary[] = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
   const state = queryState({
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error,
-    isEmpty: items.length === 0,
+    isEmpty: (pageInfo?.totalElements ?? items.length) === 0,
     emptyMessage: "등록된 로트가 없습니다.",
   })
   if (state) return state
@@ -625,12 +804,27 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>로트 번호</TableHead>
-            <TableHead>SKU</TableHead>
+            <SortableHead field="lotNumber" sort={sort} onSort={onSort}>
+              로트 번호
+            </SortableHead>
+            <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+              SKU
+            </SortableHead>
             <TableHead>제조일</TableHead>
-            <TableHead>유효기한</TableHead>
-            <TableHead>상태</TableHead>
-            <TableHead className="text-right">단가</TableHead>
+            <SortableHead field="expiryDate" sort={sort} onSort={onSort}>
+              유효기한
+            </SortableHead>
+            <SortableHead field="status" sort={sort} onSort={onSort}>
+              상태
+            </SortableHead>
+            <SortableHead
+              field="unitCost"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              단가
+            </SortableHead>
             {canChange && <TableHead />}
           </TableRow>
         </TableHeader>
@@ -674,6 +868,13 @@ function LotsTable({ query }: { query: ReturnType<typeof useLots> }) {
           ))}
         </TableBody>
       </Table>
+      {pageInfo && pageInfo.totalElements > 0 && (
+        <Pager
+          pageInfo={pageInfo}
+          onPage={paging.setPage}
+          onSize={paging.setSize}
+        />
+      )}
       <ReasonDialog
         open={target !== null}
         onOpenChange={(open) => !open && setTarget(null)}
