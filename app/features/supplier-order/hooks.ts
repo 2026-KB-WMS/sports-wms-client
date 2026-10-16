@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import * as supplierOrderApi from "~/lib/api/supplier-order"
 
@@ -11,6 +11,8 @@ export function useSupplierOrders(
   return useQuery({
     queryKey: ["supplier-order", "list", params],
     queryFn: () => supplierOrderApi.getSupplierOrders(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
     enabled,
   })
 }

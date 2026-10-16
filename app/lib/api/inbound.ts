@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { PagedData, PageParams } from "./types"
 
 /**
  * 입고 API.
@@ -110,16 +110,18 @@ export interface InspectLineInput {
   defectSectionId?: number
 }
 
-export function getInbounds(params?: {
-  status?: InboundStatus
-  warehouseId?: number
-  purchaseOrderId?: number
-  supplierOrderId?: number
-  keyword?: string
-  arrivedFrom?: string
-  arrivedTo?: string
-}) {
-  return apiClient.get<ListData<InboundListItem>>("/api/v1/inbounds", {
+export function getInbounds(
+  params?: PageParams & {
+    status?: InboundStatus
+    warehouseId?: number
+    purchaseOrderId?: number
+    supplierOrderId?: number
+    keyword?: string
+    arrivedFrom?: string
+    arrivedTo?: string
+  }
+) {
+  return apiClient.get<PagedData<InboundListItem>>("/api/v1/inbounds", {
     query: params,
   })
 }

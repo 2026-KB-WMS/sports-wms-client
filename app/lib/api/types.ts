@@ -26,7 +26,27 @@ export interface ErrorResponse {
   errors: FieldError[]
 }
 
-/** 목록 API의 data 형태. 페이징 도입 전까지는 items만 내려온다. */
+/** 목록 API의 data 형태. 페이지네이션을 적용한 목록만 pageInfo가 함께 내려온다. */
 export interface ListData<T> {
   items: T[]
+}
+
+/** 페이지네이션 요청 파라미터. sort는 `필드,asc|desc` 하나만. 생략하면 서버 기본 정렬. */
+export type PageParams = {
+  page?: number
+  size?: number
+  sort?: string
+}
+
+export interface PageInfo {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  /** 실제 적용된 정렬. 요청에 sort가 없으면 기본 정렬이 내려온다. */
+  sort: string
+}
+
+export interface PagedData<T> extends ListData<T> {
+  pageInfo: PageInfo
 }

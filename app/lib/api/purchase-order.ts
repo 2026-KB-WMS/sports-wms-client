@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { PagedData, PageParams } from "./types"
 
 /**
  * 창고 발주 요청 API. 지점 발주(`/orders`)와 구분한다.
@@ -91,15 +91,17 @@ export interface PurchaseOrderCreateInput {
   lines: { skuId: number; expectedQuantity: number }[]
 }
 
-export function getPurchaseOrders(params?: {
-  status?: PurchaseOrderStatus
-  warehouseId?: number
-  supplierId?: number
-  keyword?: string
-  createdFrom?: string
-  createdTo?: string
-}) {
-  return apiClient.get<ListData<PurchaseOrderListItem>>(
+export function getPurchaseOrders(
+  params?: PageParams & {
+    status?: PurchaseOrderStatus
+    warehouseId?: number
+    supplierId?: number
+    keyword?: string
+    createdFrom?: string
+    createdTo?: string
+  }
+) {
+  return apiClient.get<PagedData<PurchaseOrderListItem>>(
     "/api/v1/purchase-orders",
     { query: params }
   )
