@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -94,13 +95,18 @@ function UserList() {
   const [affiliationId, setAffiliationId] = useState("")
   const [editing, setEditing] = useState<UserSummary | null>(null)
 
-  const usersQuery = useUsers({
+  const filters = {
     keyword: keyword || undefined,
     role: roleFilter || undefined,
     status: statusFilter || undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const usersQuery = useUsers({ ...filters, ...paging.params })
   const updateUser = useUpdateUser()
   const users = usersQuery.data?.items ?? []
+  const pageInfo = usersQuery.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
 
   function closePending(open: boolean) {
     if (open) return
@@ -177,12 +183,20 @@ function UserList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>이름</TableHead>
-                  <TableHead>아이디</TableHead>
+                  <SortableHead field="name" sort={sort} onSort={onSort}>
+                    이름
+                  </SortableHead>
+                  <SortableHead field="loginId" sort={sort} onSort={onSort}>
+                    아이디
+                  </SortableHead>
                   <TableHead>이메일</TableHead>
                   <TableHead>전화번호</TableHead>
-                  <TableHead>역할</TableHead>
-                  <TableHead>상태</TableHead>
+                  <SortableHead field="role" sort={sort} onSort={onSort}>
+                    역할
+                  </SortableHead>
+                  <SortableHead field="status" sort={sort} onSort={onSort}>
+                    상태
+                  </SortableHead>
                   <TableHead>최근 로그인</TableHead>
                   <TableHead className="text-right">관리</TableHead>
                 </TableRow>
@@ -241,6 +255,13 @@ function UserList() {
                 })}
               </TableBody>
             </Table>
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>

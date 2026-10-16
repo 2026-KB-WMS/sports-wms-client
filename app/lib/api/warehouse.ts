@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { ListData, PagedData, PageParams } from "./types"
 
 /**
  * 창고 도메인 (Warehouse / WarehouseSection / WarehouseMember / 고정 코드) API.
@@ -225,6 +225,8 @@ export interface WarehouseMember {
   warehouseId: number
   warehouseName: string
   userId: number
+  userName: string
+  loginId: string
   memberRole: string
   assignedAt: string
 }
@@ -235,11 +237,13 @@ export interface WarehouseMemberAssignInput {
   memberRole: string
 }
 
-export function getManagers(params?: {
-  warehouseId?: number
-  userId?: number
-}) {
-  return apiClient.get<ListData<WarehouseMember>>(
+export function getManagers(
+  params?: PageParams & {
+    warehouseId?: number
+    userId?: number
+  }
+) {
+  return apiClient.get<PagedData<WarehouseMember>>(
     "/api/v1/warehouses/managers",
     { query: params }
   )

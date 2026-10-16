@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { ListData, PagedData, PageParams } from "./types"
 
 /**
  * 지점 도메인 (Store / StoreMember) API.
@@ -57,8 +57,10 @@ export interface CodeItem {
   name: string
 }
 
-export function getStores(params?: { keyword?: string; isActive?: boolean }) {
-  return apiClient.get<ListData<Store>>("/api/v1/stores", { query: params })
+export function getStores(
+  params?: PageParams & { keyword?: string; isActive?: boolean }
+) {
+  return apiClient.get<PagedData<Store>>("/api/v1/stores", { query: params })
 }
 
 export function getStore(storeId: number) {
@@ -102,6 +104,8 @@ export interface StoreMember {
   storeId: number
   storeName: string
   userId: number
+  userName: string
+  loginId: string
   memberRole: string
   assignedAt: string
 }
@@ -112,11 +116,13 @@ export interface StoreMemberAssignInput {
   memberRole: string
 }
 
-export function getStoreManagers(params?: {
-  storeId?: number
-  userId?: number
-}) {
-  return apiClient.get<ListData<StoreMember>>("/api/v1/stores/managers", {
+export function getStoreManagers(
+  params?: PageParams & {
+    storeId?: number
+    userId?: number
+  }
+) {
+  return apiClient.get<PagedData<StoreMember>>("/api/v1/stores/managers", {
     query: params,
   })
 }

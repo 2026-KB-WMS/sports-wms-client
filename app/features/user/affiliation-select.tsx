@@ -17,7 +17,7 @@ export function AffiliationSelect({
 }) {
   const isWarehouse = role === "WAREHOUSE_MANAGER"
   const warehouses = useWarehouses({ isActive: true })
-  const stores = useStores({ isActive: true }, !isWarehouse)
+  const stores = useStores({ isActive: true, size: 100 }, !isWarehouse)
   const options = isWarehouse
     ? (warehouses.data?.items ?? []).map((w) => ({
         id: w.warehouseId,

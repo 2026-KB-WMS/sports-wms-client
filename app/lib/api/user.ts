@@ -1,6 +1,6 @@
 import { apiClient } from "./client"
 import type { UserStatus } from "./auth"
-import type { ListData } from "./types"
+import type { PagedData, PageParams } from "./types"
 
 /** 사용자 관리 API (wms-server docs/api/auth.md). HQ_ADMIN 전용. */
 
@@ -18,13 +18,15 @@ export interface UserSummary {
   createdAt: string
 }
 
-/** 필터를 주지 않으면 모든 역할·상태를 반환한다. 페이지네이션은 없다. */
-export function getUsers(params?: {
-  role?: UserRole
-  status?: UserStatus
-  keyword?: string
-}) {
-  return apiClient.get<ListData<UserSummary>>("/api/v1/users", {
+/** 필터를 주지 않으면 모든 역할·상태를 반환한다. 기본 정렬은 createdAt desc, size 기본 20. */
+export function getUsers(
+  params?: PageParams & {
+    role?: UserRole
+    status?: UserStatus
+    keyword?: string
+  }
+) {
+  return apiClient.get<PagedData<UserSummary>>("/api/v1/users", {
     query: params,
   })
 }

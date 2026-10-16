@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as warehouseApi from "~/lib/api/warehouse"
 
@@ -41,6 +46,8 @@ export function useManagers(
   return useQuery({
     queryKey: ["warehouse", "managers", params],
     queryFn: () => warehouseApi.getManagers(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 

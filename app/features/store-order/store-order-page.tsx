@@ -60,7 +60,8 @@ export function StoreOrderPage() {
   const [showForm, setShowForm] = useState(false)
 
   const myStores = useMyStores(isOwner).data?.items ?? []
-  const allStores = useStores({ isActive: true }, isAdmin).data?.items ?? []
+  const allStores =
+    useStores({ isActive: true, size: 100 }, isAdmin).data?.items ?? []
   const storeOptions = isOwner ? myStores : allStores
   const warehouses = useSelectableWarehouses()
 

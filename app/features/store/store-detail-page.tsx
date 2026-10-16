@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { AddressField } from "~/components/common/address-field"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { ReasonDialog } from "~/components/common/reason-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
@@ -17,7 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { UserName } from "~/features/user/user-name"
 import { UserSelect } from "~/features/user/user-select"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import { getPhoneError } from "~/lib/phone"
@@ -308,8 +308,12 @@ function StoreManagersCard({
   storeId: number
   store: StoreDetail
 }) {
-  const managersQuery = useStoreManagers({ storeId })
+  const paging = usePaging(JSON.stringify({ storeId }))
+  const managersQuery = useStoreManagers({ storeId, ...paging.params })
   const managers = managersQuery.data?.items ?? []
+  const pageInfo = managersQuery.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
   const [releasing, setReleasing] = useState<StoreMember | null>(null)
   const release = useReleaseStoreManager()
   const memberRoles = useStoreManagementTypes().data?.items ?? []
@@ -353,9 +357,15 @@ function StoreManagersCard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>사용자</TableHead>
-                  <TableHead>역할</TableHead>
-                  <TableHead>배정일시</TableHead>
+                  <SortableHead field="userName" sort={sort} onSort={onSort}>
+                    사용자
+                  </SortableHead>
+                  <SortableHead field="memberRole" sort={sort} onSort={onSort}>
+                    역할
+                  </SortableHead>
+                  <SortableHead field="assignedAt" sort={sort} onSort={onSort}>
+                    배정일시
+                  </SortableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -363,7 +373,7 @@ function StoreManagersCard({
                 {managers.map((member) => (
                   <TableRow key={member.storeMemberId}>
                     <TableCell>
-                      <UserName userId={member.userId} />
+                      {member.userName} ({member.loginId})
                     </TableCell>
                     <TableCell>{roleName(member.memberRole)}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -386,6 +396,13 @@ function StoreManagersCard({
               </TableBody>
             </Table>
           ))}
+        {pageInfo && pageInfo.totalElements > 0 && (
+          <Pager
+            pageInfo={pageInfo}
+            onPage={paging.setPage}
+            onSize={paging.setSize}
+          />
+        )}
       </CardContent>
 
       <ConfirmDialog
@@ -394,8 +411,9 @@ function StoreManagersCard({
         title="배정 회수"
         description={
           <>
-            {releasing && <UserName userId={releasing.userId} />}의 이 지점
-            배정을 회수합니다. 해당 사용자는 이 지점에 접근할 수 없게 됩니다.
+            {releasing && `${releasing.userName} (${releasing.loginId})`}의 이
+            지점 배정을 회수합니다. 해당 사용자는 이 지점에 접근할 수 없게
+            됩니다.
           </>
         }
         confirmLabel="회수"

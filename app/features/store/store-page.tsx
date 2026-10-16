@@ -2,6 +2,7 @@ import { useState } from "react"
 import { AddressField } from "~/components/common/address-field"
 import { Plus, X } from "lucide-react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -44,11 +45,14 @@ function AdminStoreList() {
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("")
   const [showForm, setShowForm] = useState(false)
 
-  const storesQuery = useStores({
+  const filters = {
     keyword: keyword || undefined,
     isActive: activeFilter === "" ? undefined : activeFilter === "true",
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const storesQuery = useStores({ ...filters, ...paging.params })
   const stores = storesQuery.data?.items ?? []
+  const pageInfo = storesQuery.data?.pageInfo
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -105,7 +109,18 @@ function AdminStoreList() {
             </p>
           )}
           {!storesQuery.isLoading && !storesQuery.isError && (
-            <StoreTable stores={stores} />
+            <StoreTable
+              stores={stores}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -152,10 +167,23 @@ function MyStoreList() {
 function StoreTable({
   stores,
   emptyMessage = "조건에 맞는 지점이 없습니다.",
+  sort,
+  onSort,
 }: {
   stores: Store[]
   emptyMessage?: string
+  /** 정렬을 지원하지 않는 목록(내 지점)은 onSort를 생략한다. */
+  sort?: string
+  onSort?: (field: string) => void
 }) {
+  const head = (field: string, label: string) =>
+    onSort ? (
+      <SortableHead field={field} sort={sort} onSort={onSort}>
+        {label}
+      </SortableHead>
+    ) : (
+      <TableHead>{label}</TableHead>
+    )
   if (stores.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -167,12 +195,12 @@ function StoreTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>지점 코드</TableHead>
-          <TableHead>지점명</TableHead>
+          {head("storeCode", "지점 코드")}
+          {head("storeName", "지점명")}
           <TableHead>주소</TableHead>
           <TableHead>담당자</TableHead>
           <TableHead>연락처</TableHead>
-          <TableHead>상태</TableHead>
+          {head("isActive", "상태")}
         </TableRow>
       </TableHeader>
       <TableBody>

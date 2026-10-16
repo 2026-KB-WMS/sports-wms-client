@@ -25,9 +25,13 @@ export function UserSelect({
   onChange: (userId: string) => void
 }) {
   const [keyword, setKeyword] = useState("")
-  const users =
-    useUsers({ role, status: "ACTIVE", keyword: keyword || undefined }).data
-      ?.items ?? []
+  const usersQuery = useUsers({
+    role,
+    status: "ACTIVE",
+    keyword: keyword || undefined,
+    size: 100,
+  })
+  const users = usersQuery.data?.items ?? []
 
   return (
     <div className="flex flex-wrap items-end gap-4">
@@ -57,6 +61,12 @@ export function UserSelect({
           ))}
         </Select>
       </div>
+      {usersQuery.data &&
+        usersQuery.data.pageInfo.totalElements > users.length && (
+          <p className="w-full text-xs text-muted-foreground">
+            사용자가 많아 일부만 표시됩니다. 검색어로 좁혀 주세요.
+          </p>
+        )}
     </div>
   )
 }
