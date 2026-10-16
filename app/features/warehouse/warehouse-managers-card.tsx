@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -14,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import { UserName } from "~/features/user/user-name"
 import { UserSelect } from "~/features/user/user-select"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { WarehouseMember } from "~/lib/api/warehouse"
@@ -37,8 +37,12 @@ export function WarehouseManagersCard({
   warehouseId: number
   isActive: boolean
 }) {
-  const managersQuery = useManagers({ warehouseId })
+  const paging = usePaging(JSON.stringify({ warehouseId }))
+  const managersQuery = useManagers({ warehouseId, ...paging.params })
   const managers = managersQuery.data?.items ?? []
+  const pageInfo = managersQuery.data?.pageInfo
+  const sort = pageInfo?.sort
+  const onSort = paging.toggleSort
   const [releasing, setReleasing] = useState<WarehouseMember | null>(null)
   const release = useReleaseManager()
   const memberRoles = useManagementTypes().data?.items ?? []
@@ -82,9 +86,15 @@ export function WarehouseManagersCard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>사용자</TableHead>
-                  <TableHead>역할</TableHead>
-                  <TableHead>배정일시</TableHead>
+                  <SortableHead field="userName" sort={sort} onSort={onSort}>
+                    사용자
+                  </SortableHead>
+                  <SortableHead field="memberRole" sort={sort} onSort={onSort}>
+                    역할
+                  </SortableHead>
+                  <SortableHead field="assignedAt" sort={sort} onSort={onSort}>
+                    배정일시
+                  </SortableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -92,7 +102,7 @@ export function WarehouseManagersCard({
                 {managers.map((member) => (
                   <TableRow key={member.warehouseMemberId}>
                     <TableCell>
-                      <UserName userId={member.userId} />
+                      {member.userName} ({member.loginId})
                     </TableCell>
                     <TableCell>{roleName(member.memberRole)}</TableCell>
                     <TableCell className="text-muted-foreground">
@@ -115,6 +125,13 @@ export function WarehouseManagersCard({
               </TableBody>
             </Table>
           ))}
+        {pageInfo && pageInfo.totalElements > 0 && (
+          <Pager
+            pageInfo={pageInfo}
+            onPage={paging.setPage}
+            onSize={paging.setSize}
+          />
+        )}
       </CardContent>
 
       <ConfirmDialog
@@ -123,8 +140,9 @@ export function WarehouseManagersCard({
         title="배정 회수"
         description={
           <>
-            {releasing && <UserName userId={releasing.userId} />}의 이 창고
-            배정을 회수합니다. 해당 사용자는 이 창고에 접근할 수 없게 됩니다.
+            {releasing && `${releasing.userName} (${releasing.loginId})`}의 이
+            창고 배정을 회수합니다. 해당 사용자는 이 창고에 접근할 수 없게
+            됩니다.
           </>
         }
         confirmLabel="회수"

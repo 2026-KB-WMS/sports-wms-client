@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as storeApi from "~/lib/api/store"
 
@@ -14,6 +19,8 @@ export function useStores(
     queryKey: ["store", "stores", params],
     queryFn: () => storeApi.getStores(params),
     enabled,
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -49,6 +56,8 @@ export function useStoreManagers(
     queryKey: ["store", "managers", params],
     queryFn: () => storeApi.getStoreManagers(params),
     enabled,
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
