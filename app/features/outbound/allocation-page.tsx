@@ -64,10 +64,6 @@ export function AllocationPage() {
       <Card>
         <CardHeader>
           <CardTitle>재고 할당 목록</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            할당은 지점 발주 상세에서 합니다. 출고에 묶이기 전 할당만 해제할 수
-            있습니다.
-          </p>
           <div className="mt-3 flex flex-wrap items-end gap-4">
             {storeOrderId && (
               <div className="flex items-center gap-2 text-sm">

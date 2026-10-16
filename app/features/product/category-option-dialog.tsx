@@ -4,7 +4,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -126,11 +125,6 @@ function CategoryOptionForm({
     <>
       <DialogHeader>
         <DialogTitle>옵션 그룹 지정 · {category.categoryName}</DialogTitle>
-        <DialogDescription>
-          스펙은 상품 등록, SKU 옵션은 SKU 등록에서 그룹마다 값 하나씩 고르게
-          됩니다. 하위 카테고리가 상속하며, 이미 등록한 상품·SKU는 바뀌지
-          않습니다.
-        </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4">
         {inherited.length > 0 && (

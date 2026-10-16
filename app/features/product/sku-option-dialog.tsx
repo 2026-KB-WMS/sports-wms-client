@@ -4,7 +4,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -66,10 +65,6 @@ function SkuOptionForm({
     <>
       <DialogHeader>
         <DialogTitle>옵션 연결 · {sku.skuName}</DialogTitle>
-        <DialogDescription>
-          옵션이 없는 SKU에 한 번만 연결할 수 있고, 연결한 옵션은 해제할 수
-          없습니다. 상품 카테고리에 지정된 SKU 옵션을 모두 골라야 합니다.
-        </DialogDescription>
       </DialogHeader>
       <div className="grid gap-4">
         {loading && (

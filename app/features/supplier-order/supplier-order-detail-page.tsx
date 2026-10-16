@@ -86,7 +86,12 @@ function HeaderCard({ order }: { order: SupplierOrder }) {
         </p>
         <p>
           <span className="text-muted-foreground">공급처 </span>
-          {order.supplierName}
+          <Link
+            className="underline underline-offset-2"
+            to={`/suppliers/${order.supplierId}`}
+          >
+            {order.supplierName}
+          </Link>
         </p>
         <p>
           <span className="text-muted-foreground">입고 창고 </span>

@@ -8,11 +8,7 @@ export default function Inventory() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="재고"
-          title="재고 관리"
-          description="재고 현황을 조회하고 조정합니다."
-        />
+        <AppHeader section="재고" title="재고 관리" />
         <InventoryPage />
       </SidebarInset>
     </SidebarProvider>

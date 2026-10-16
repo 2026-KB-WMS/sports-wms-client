@@ -8,11 +8,7 @@ export default function Inbounds() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="입고"
-          title="입고 관리"
-          description="도착한 물품을 검수하고 재고에 반영합니다."
-        />
+        <AppHeader section="입고" title="입고 관리" />
         <InboundPage />
       </SidebarInset>
     </SidebarProvider>

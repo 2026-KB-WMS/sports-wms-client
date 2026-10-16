@@ -4,7 +4,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -78,11 +77,6 @@ function AssignForm({
         <DialogTitle>
           {isReassign ? "출고 창고 변경" : "출고 창고 배정"}
         </DialogTitle>
-        <DialogDescription>
-          {isReassign
-            ? "재고 할당이나 취소되지 않은 출고가 남아 있으면 창고를 바꿀 수 없습니다. 먼저 할당을 해제하고 출고를 취소해 주세요."
-            : "발주를 처리할 창고를 정합니다. 서버는 해당 창고의 재고가 충분한지는 확인하지 않습니다."}
-        </DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-4">
         <div>

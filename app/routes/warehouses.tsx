@@ -8,11 +8,7 @@ export default function Warehouses() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="창고"
-          title="창고 관리"
-          description="창고를 등록하고 구역을 관리합니다."
-        />
+        <AppHeader section="창고" title="창고 관리" />
         <WarehousePage />
       </SidebarInset>
     </SidebarProvider>

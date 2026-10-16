@@ -13,11 +13,7 @@ export default function InboundDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="입고"
-          title="입고 상세"
-          description="검수 항목을 입력하고 입고를 완료합니다."
-        />
+        <AppHeader section="입고" title="입고 상세" />
         {Number.isFinite(id) ? (
           <InboundDetailPage inboundId={id} />
         ) : (

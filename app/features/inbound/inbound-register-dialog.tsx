@@ -5,7 +5,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -84,11 +83,6 @@ function RegisterForm({
     <>
       <DialogHeader>
         <DialogTitle>입고 등록</DialogTitle>
-        <DialogDescription>
-          물품이 도착했음을 등록합니다. 검수 항목과 재고 반영은 다음 단계에서
-          합니다. 같은 공급처 발주서에는 완료되지 않은 입고를 한 건만 둘 수
-          있습니다.
-        </DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-4">
         <div>

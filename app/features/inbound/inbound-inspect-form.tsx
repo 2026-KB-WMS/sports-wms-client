@@ -1,9 +1,24 @@
 import { useState } from "react"
 
 import { Button } from "~/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog"
 import { Input } from "~/components/ui/input"
 import { Label } from "~/components/ui/label"
 import { Select } from "~/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table"
 import { useSupplierOrder } from "~/features/supplier-order/hooks"
 import { formatWon } from "~/features/purchase-order/format"
 import { getErrorMessage } from "~/lib/api/error-messages"
@@ -117,9 +132,16 @@ function validate(lines: DraftLine[], poLines: SupplierOrderLine[]) {
   return null
 }
 
+type SectionOption = {
+  sectionId: number
+  sectionCode: string
+  sectionName: string
+  availableCapacity?: number | null
+}
+
 /**
  * 검수 항목 입력. 저장하면 이 입고의 검수 항목이 **전부 교체**된다(재고는 입고 완료 때 반영).
- * 합격 수량은 입고 수량에서 불량 수량을 뺀 값이다.
+ * 합격 수량은 입고 수량에서 불량 수량을 뺀 값이다. 항목은 표로 보고 모달에서 수정한다.
  */
 export function InboundInspectForm({
   inboundId,
@@ -138,28 +160,23 @@ export function InboundInspectForm({
   const acceptedSections = useAssignableSections(inboundId).data?.items ?? []
   const defectSections = useDefectSections(inboundId).data?.items ?? []
 
-  const [lines, setLines] = useState<DraftLine[]>(() =>
-    savedItems.map(fromSaved)
+  // 저장된 검수가 없으면 발주서 라인(잔여 수량이 있는 것)을 한 줄씩 채워 시작한다. 항목 추가는 없다.
+  const [draftLines, setDraftLines] = useState<DraftLine[] | null>(
+    savedItems.length > 0 ? savedItems.map(fromSaved) : null
   )
-  const error = validate(lines, poLines)
-
-  function update(key: number, patch: Partial<DraftLine>) {
-    setLines((prev) =>
-      prev.map((l) => (l.key === key ? { ...l, ...patch } : l))
+  if (draftLines === null && poLines.length > 0) {
+    setDraftLines(
+      poLines.filter((p) => p.remainingQuantity > 0).map((p) => emptyLine(p))
     )
   }
-
-  /** 발주 항목을 고르면 잔여 수량과 발주 단가를 기본값으로 채운다. */
-  function selectPoLine(key: number, value: string) {
-    const poLine = poLines.find((p) => String(p.purchaseOrderLineId) === value)
-    update(key, {
-      purchaseOrderLineId: value,
-      ...(poLine && {
-        receivedQuantity: String(poLine.remainingQuantity),
-        receivedUnitPrice: String(poLine.orderedUnitPrice),
-      }),
-    })
-  }
+  const lines = draftLines ?? []
+  const setLines = (fn: (prev: DraftLine[]) => DraftLine[]) =>
+    setDraftLines((prev) => fn(prev ?? []))
+  const [editing, setEditing] = useState<{
+    draft: DraftLine
+    isNew: boolean
+  } | null>(null)
+  const error = validate(lines, poLines)
 
   function handleSubmit() {
     if (error) return
@@ -197,207 +214,92 @@ export function InboundInspectForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
-        저장하면 기존 검수 항목이 모두 이 내용으로 교체됩니다. 재고에는 입고
-        완료 때 반영됩니다. 합격·불량 수량이 있는 항목은 완료 전에 적치 구역을
-        지정해야 합니다.
-      </p>
-
-      {lines.map((line, index) => {
-        const poLine = poLines.find(
-          (p) => String(p.purchaseOrderLineId) === line.purchaseOrderLineId
-        )
-        const received = Number(line.receivedQuantity) || 0
-        const defective = Number(line.defectiveQuantity) || 0
-        const accepted = Math.max(received - defective, 0)
-        const priceChanged =
-          poLine && Number(line.receivedUnitPrice) !== poLine.orderedUnitPrice
-
-        return (
-          <div
-            key={line.key}
-            className="grid gap-3 rounded-lg border p-4 sm:grid-cols-4"
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm text-muted-foreground">
+          저장하면 기존 검수 항목이 모두 이 내용으로 교체됩니다. 재고에는 입고
+          완료 때 반영됩니다. 합격·불량 수량이 있는 항목은 완료 전에 적치 구역을
+          지정해야 합니다.
+        </p>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            onClick={handleSubmit}
+            disabled={!!error || inspect.isPending}
           >
-            <div className="flex items-center justify-between sm:col-span-4">
-              <p className="text-sm font-medium">{index + 1}번 항목</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setLines((prev) => prev.filter((l) => l.key !== line.key))
-                }
-              >
-                삭제
-              </Button>
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor={`po-line-${line.key}`}>발주 항목</Label>
-              <Select
-                id={`po-line-${line.key}`}
-                value={line.purchaseOrderLineId}
-                onChange={(e) => selectPoLine(line.key, e.target.value)}
-              >
-                <option value="">선택</option>
-                {poLines.map((p) => (
-                  <option
-                    key={p.purchaseOrderLineId}
-                    value={p.purchaseOrderLineId}
-                  >
-                    {p.skuCode} · {p.skuName} (잔여 {p.remainingQuantity})
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor={`lot-${line.key}`}>로트 번호</Label>
-              <Input
-                id={`lot-${line.key}`}
-                value={line.lotNumber}
-                onChange={(e) =>
-                  update(line.key, { lotNumber: e.target.value })
-                }
-              />
-            </div>
-            <div />
-            <div>
-              <Label htmlFor={`mfg-${line.key}`}>제조일 (선택)</Label>
-              <Input
-                id={`mfg-${line.key}`}
-                type="date"
-                value={line.manufacturedDate}
-                onChange={(e) =>
-                  update(line.key, { manufacturedDate: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor={`exp-${line.key}`}>유통기한 (선택)</Label>
-              <Input
-                id={`exp-${line.key}`}
-                type="date"
-                value={line.expiryDate}
-                onChange={(e) =>
-                  update(line.key, { expiryDate: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor={`recv-${line.key}`}>입고 수량</Label>
-              <Input
-                id={`recv-${line.key}`}
-                type="number"
-                min={1}
-                value={line.receivedQuantity}
-                onChange={(e) =>
-                  update(line.key, { receivedQuantity: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor={`def-${line.key}`}>불량 수량</Label>
-              <Input
-                id={`def-${line.key}`}
-                type="number"
-                min={0}
-                value={line.defectiveQuantity}
-                onChange={(e) =>
-                  update(line.key, { defectiveQuantity: e.target.value })
-                }
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                합격 {accepted}
-              </p>
-            </div>
-            <div>
-              <Label htmlFor={`price-${line.key}`}>입고 단가</Label>
-              <Input
-                id={`price-${line.key}`}
-                type="number"
-                min={0}
-                step="0.01"
-                value={line.receivedUnitPrice}
-                onChange={(e) =>
-                  update(line.key, { receivedUnitPrice: e.target.value })
-                }
-              />
-              {poLine && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  발주 단가 {formatWon(poLine.orderedUnitPrice)}
-                </p>
-              )}
-            </div>
-            {priceChanged && (
-              <div className="sm:col-span-3">
-                <Label htmlFor={`reason-${line.key}`}>단가 변경 사유</Label>
-                <Input
-                  id={`reason-${line.key}`}
-                  maxLength={500}
-                  value={line.priceChangeReason}
-                  onChange={(e) =>
-                    update(line.key, { priceChangeReason: e.target.value })
-                  }
-                />
-              </div>
-            )}
-            <div className="sm:col-span-2">
-              <Label htmlFor={`acc-sec-${line.key}`}>합격품 적치 구역</Label>
-              <Select
-                id={`acc-sec-${line.key}`}
-                value={line.acceptedSectionId}
-                onChange={(e) =>
-                  update(line.key, { acceptedSectionId: e.target.value })
-                }
-              >
-                <option value="">미지정</option>
-                {acceptedSections.map((s) => (
-                  <option key={s.sectionId} value={s.sectionId}>
-                    {s.sectionCode} · {s.sectionName} (여유{" "}
-                    {s.availableCapacity ?? "-"})
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor={`def-sec-${line.key}`}>불량품 적치 구역</Label>
-              <Select
-                id={`def-sec-${line.key}`}
-                value={line.defectSectionId}
-                onChange={(e) =>
-                  update(line.key, { defectSectionId: e.target.value })
-                }
-              >
-                <option value="">미지정</option>
-                {defectSections.map((s) => (
-                  <option key={s.sectionId} value={s.sectionId}>
-                    {s.sectionCode} · {s.sectionName} (여유{" "}
-                    {s.availableCapacity ?? "-"})
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="sm:col-span-4">
-              <Label htmlFor={`note-${line.key}`}>검수 메모 (선택)</Label>
-              <Input
-                id={`note-${line.key}`}
-                maxLength={1000}
-                value={line.inspectionNote}
-                onChange={(e) =>
-                  update(line.key, { inspectionNote: e.target.value })
-                }
-              />
-            </div>
-          </div>
-        )
-      })}
-
-      <div>
-        <Button
-          variant="outline"
-          onClick={() => setLines((prev) => [...prev, emptyLine()])}
-        >
-          검수 항목 추가
-        </Button>
+            {inspect.isPending ? "저장 중..." : "검수 저장"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setEditing({ draft: emptyLine(), isNew: true })}
+          >
+            검수 항목 추가
+          </Button>
+        </div>
       </div>
+
+      {lines.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[32%]">SKU</TableHead>
+              <TableHead className="w-[20%]">로트 번호</TableHead>
+              <TableHead className="w-[10%] text-right">입고</TableHead>
+              <TableHead className="w-[10%] text-right">불량</TableHead>
+              <TableHead className="w-[10%] text-right">합격</TableHead>
+              <TableHead className="w-[13%] text-right">단가</TableHead>
+              <TableHead className="w-px" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lines.map((line) => {
+              const poLine = poLines.find(
+                (p) =>
+                  String(p.purchaseOrderLineId) === line.purchaseOrderLineId
+              )
+              const received = Number(line.receivedQuantity) || 0
+              const defective = Number(line.defectiveQuantity) || 0
+              return (
+                <TableRow key={line.key}>
+                  <TableCell>
+                    <span className="block font-mono text-xs text-muted-foreground">
+                      {poLine?.skuCode}
+                    </span>
+                    {poLine?.skuName ?? "-"}
+                  </TableCell>
+                  <TableCell>{line.lotNumber}</TableCell>
+                  <TableCell className="text-right">{received}</TableCell>
+                  <TableCell className="text-right">{defective}</TableCell>
+                  <TableCell className="text-right">
+                    {Math.max(received - defective, 0)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatWon(Number(line.receivedUnitPrice) || 0)}
+                  </TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditing({ draft: line, isNew: false })}
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() =>
+                        setLines((prev) =>
+                          prev.filter((l) => l.key !== line.key)
+                        )
+                      }
+                    >
+                      삭제
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      )}
 
       {error && lines.length > 0 && (
         <p className="text-sm text-destructive">{error}</p>
@@ -407,14 +309,270 @@ export function InboundInspectForm({
           {getErrorMessage(inspect.error, "검수 저장에 실패했습니다.")}
         </p>
       )}
-      <div className="flex gap-2">
-        <Button onClick={handleSubmit} disabled={!!error || inspect.isPending}>
-          {inspect.isPending ? "저장 중..." : "검수 저장"}
-        </Button>
-        <Button variant="ghost" onClick={onDone} disabled={inspect.isPending}>
+      <Dialog
+        open={editing !== null}
+        onOpenChange={(open) => !open && setEditing(null)}
+      >
+        <DialogContent className="max-w-2xl">
+          {/* 열릴 때마다 새로 마운트되어 입력값이 초기화된다. */}
+          {editing && (
+            <LineEditForm
+              initial={editing.draft}
+              isNew={editing.isNew}
+              lines={lines}
+              poLines={poLines}
+              acceptedSections={acceptedSections}
+              defectSections={defectSections}
+              onCancel={() => setEditing(null)}
+              onSave={(draft) => {
+                setLines((prev) =>
+                  editing.isNew
+                    ? [...prev, draft]
+                    : prev.map((l) => (l.key === draft.key ? draft : l))
+                )
+                setEditing(null)
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+/** 항목 하나를 추가·수정하는 모달. SKU(발주 항목)는 추가할 때만 고르고, 수정할 때는 바꿀 수 없다. */
+function LineEditForm({
+  initial,
+  isNew,
+  lines,
+  poLines,
+  acceptedSections,
+  defectSections,
+  onCancel,
+  onSave,
+}: {
+  initial: DraftLine
+  isNew: boolean
+  lines: DraftLine[]
+  poLines: SupplierOrderLine[]
+  acceptedSections: SectionOption[]
+  defectSections: SectionOption[]
+  onCancel: () => void
+  onSave: (draft: DraftLine) => void
+}) {
+  const [draft, setDraft] = useState(initial)
+  const patch = (p: Partial<DraftLine>) => setDraft((d) => ({ ...d, ...p }))
+
+  const poLine = poLines.find(
+    (p) => String(p.purchaseOrderLineId) === draft.purchaseOrderLineId
+  )
+  // 다른 항목과의 중복·잔여 수량 초과까지 포함해 전체 목록 기준으로 검증한다.
+  const next = isNew
+    ? [...lines, draft]
+    : lines.map((l) => (l.key === draft.key ? draft : l))
+  const error = validate(next, poLines)
+
+  const received = Number(draft.receivedQuantity) || 0
+  const defective = Number(draft.defectiveQuantity) || 0
+  // 합격 수량이 0이면 합격품 구역, 불량 수량이 0이면 불량품 구역은 지정할 수 없다.
+  const acceptedQty = Math.max(received - defective, 0)
+  const noAccepted = acceptedQty === 0
+  const noDefect = defective === 0
+  const priceChanged =
+    poLine && Number(draft.receivedUnitPrice) !== poLine.orderedUnitPrice
+
+  /** 발주 항목을 고르면 잔여 수량과 발주 단가를 기본값으로 채운다. */
+  function selectPoLine(value: string) {
+    const target = poLines.find((p) => String(p.purchaseOrderLineId) === value)
+    patch({
+      purchaseOrderLineId: value,
+      ...(target && {
+        receivedQuantity: String(target.remainingQuantity),
+        receivedUnitPrice: String(target.orderedUnitPrice),
+      }),
+    })
+  }
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle>{isNew ? "검수 항목 추가" : "검수 항목 수정"}</DialogTitle>
+      </DialogHeader>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <Label htmlFor="edit-po-line">SKU</Label>
+          {isNew ? (
+            <Select
+              id="edit-po-line"
+              value={draft.purchaseOrderLineId}
+              onChange={(e) => selectPoLine(e.target.value)}
+            >
+              <option value="">선택</option>
+              {poLines.map((p) => (
+                <option
+                  key={p.purchaseOrderLineId}
+                  value={p.purchaseOrderLineId}
+                >
+                  {p.skuCode} · {p.skuName}
+                </option>
+              ))}
+            </Select>
+          ) : (
+            <p className="text-sm">
+              {poLine ? `${poLine.skuCode} · ${poLine.skuName}` : "-"}
+            </p>
+          )}
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="edit-lot">로트 번호</Label>
+          <Input
+            id="edit-lot"
+            value={draft.lotNumber}
+            // 이미 값이 있으면 고정한다. 비어 있으면 입력해야 저장할 수 있으므로 열어 둔다.
+            disabled={initial.lotNumber !== ""}
+            onChange={(e) => patch({ lotNumber: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-mfg">제조일</Label>
+          <Input
+            id="edit-mfg"
+            type="date"
+            value={draft.manufacturedDate}
+            disabled={initial.manufacturedDate !== ""}
+            onChange={(e) => patch({ manufacturedDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-exp">유통기한</Label>
+          <Input
+            id="edit-exp"
+            type="date"
+            value={draft.expiryDate}
+            disabled={initial.expiryDate !== ""}
+            onChange={(e) => patch({ expiryDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-recv">입고 수량</Label>
+          <Input
+            id="edit-recv"
+            type="number"
+            min={1}
+            value={draft.receivedQuantity}
+            onChange={(e) => patch({ receivedQuantity: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-def">불량 수량</Label>
+          <Input
+            id="edit-def"
+            type="number"
+            min={0}
+            value={draft.defectiveQuantity}
+            onChange={(e) => patch({ defectiveQuantity: e.target.value })}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-acc">합격 수량</Label>
+          <Input
+            id="edit-acc"
+            readOnly
+            tabIndex={-1}
+            value={Math.max(received - defective, 0)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="edit-price">입고 단가</Label>
+          <Input
+            id="edit-price"
+            type="number"
+            min={0}
+            step="0.01"
+            value={draft.receivedUnitPrice}
+            onChange={(e) => patch({ receivedUnitPrice: e.target.value })}
+          />
+          {poLine && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              발주 단가 {formatWon(poLine.orderedUnitPrice)}
+            </p>
+          )}
+        </div>
+        {priceChanged && (
+          <div>
+            <Label htmlFor="edit-reason">단가 변경 사유</Label>
+            <Input
+              id="edit-reason"
+              maxLength={500}
+              value={draft.priceChangeReason}
+              onChange={(e) => patch({ priceChangeReason: e.target.value })}
+            />
+          </div>
+        )}
+        <div>
+          <Label htmlFor="edit-acc-sec">합격품 적치 구역</Label>
+          <Select
+            id="edit-acc-sec"
+            value={noAccepted ? "" : draft.acceptedSectionId}
+            disabled={noAccepted}
+            onChange={(e) => patch({ acceptedSectionId: e.target.value })}
+          >
+            <option value="">미지정</option>
+            {acceptedSections.map((s) => (
+              <option key={s.sectionId} value={s.sectionId}>
+                {s.sectionCode} · {s.sectionName} (여유{" "}
+                {s.availableCapacity ?? "-"})
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="edit-def-sec">불량품 적치 구역</Label>
+          <Select
+            id="edit-def-sec"
+            value={noDefect ? "" : draft.defectSectionId}
+            disabled={noDefect}
+            onChange={(e) => patch({ defectSectionId: e.target.value })}
+          >
+            <option value="">미지정</option>
+            {defectSections.map((s) => (
+              <option key={s.sectionId} value={s.sectionId}>
+                {s.sectionCode} · {s.sectionName} (여유{" "}
+                {s.availableCapacity ?? "-"})
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="sm:col-span-2">
+          <Label htmlFor="edit-note">검수 메모 (선택)</Label>
+          <Input
+            id="edit-note"
+            maxLength={1000}
+            value={draft.inspectionNote}
+            onChange={(e) => patch({ inspectionNote: e.target.value })}
+          />
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <DialogFooter>
+        <Button variant="outline" onClick={onCancel}>
           취소
         </Button>
-      </div>
-    </div>
+        <Button
+          onClick={() =>
+            onSave({
+              ...draft,
+              acceptedSectionId: noAccepted ? "" : draft.acceptedSectionId,
+              defectSectionId: noDefect ? "" : draft.defectSectionId,
+            })
+          }
+          disabled={!!error}
+        >
+          {isNew ? "추가" : "적용"}
+        </Button>
+      </DialogFooter>
+    </>
   )
 }

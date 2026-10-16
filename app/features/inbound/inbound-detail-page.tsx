@@ -179,7 +179,12 @@ function InboundHeaderCard({
         </p>
         <p>
           <span className="text-muted-foreground">공급처 </span>
-          {inbound.supplierName}
+          <Link
+            className="underline underline-offset-2"
+            to={`/suppliers/${inbound.supplierId}`}
+          >
+            {inbound.supplierName}
+          </Link>
         </p>
         <p>
           <span className="text-muted-foreground">도착 </span>
