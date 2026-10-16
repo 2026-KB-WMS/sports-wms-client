@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { PagedData, PageParams } from "./types"
 
 /**
  * 지점 발주(지점 → 창고) API. 창고 발주(`/purchase-orders`)와 구분한다.
@@ -112,7 +112,7 @@ export interface StoreOrderCreateInput {
   lines: { skuId: number; requestedQuantity: number }[]
 }
 
-export type StoreOrderListParams = {
+export type StoreOrderListParams = PageParams & {
   status?: StoreOrderStatus
   storeId?: number
   warehouseId?: number
@@ -122,14 +122,14 @@ export type StoreOrderListParams = {
 }
 
 export function getStoreOrders(params?: StoreOrderListParams) {
-  return apiClient.get<ListData<StoreOrderListItem>>("/api/v1/orders", {
+  return apiClient.get<PagedData<StoreOrderListItem>>("/api/v1/orders", {
     query: params,
   })
 }
 
 /** 점주·창고 관리자용. 본사 관리자가 호출하면 403이다. */
 export function getMyStoreOrders(params?: StoreOrderListParams) {
-  return apiClient.get<ListData<StoreOrderListItem>>("/api/v1/orders/my", {
+  return apiClient.get<PagedData<StoreOrderListItem>>("/api/v1/orders/my", {
     query: params,
   })
 }

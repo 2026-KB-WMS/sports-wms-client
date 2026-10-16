@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -72,19 +73,19 @@ export function StoreOrderPage() {
     (isOwner && scopedStoreId !== "") ||
     (isManager && warehouses.length > 0)
 
-  const query = useStoreOrders(
-    {
-      status: (status || undefined) as StoreOrderStatus | undefined,
-      storeId: scopedStoreId ? Number(scopedStoreId) : undefined,
-      warehouseId: warehouseId ? Number(warehouseId) : undefined,
-      keyword: keyword || undefined,
-      // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
-      requestedFrom: requestedFrom ? `${requestedFrom}T00:00:00` : undefined,
-      requestedTo: requestedTo ? `${requestedTo}T23:59:59` : undefined,
-    },
-    scopeReady
-  )
+  const filters = {
+    status: (status || undefined) as StoreOrderStatus | undefined,
+    storeId: scopedStoreId ? Number(scopedStoreId) : undefined,
+    warehouseId: warehouseId ? Number(warehouseId) : undefined,
+    keyword: keyword || undefined,
+    // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
+    requestedFrom: requestedFrom ? `${requestedFrom}T00:00:00` : undefined,
+    requestedTo: requestedTo ? `${requestedTo}T23:59:59` : undefined,
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useStoreOrders({ ...filters, ...paging.params }, scopeReady)
   const orders = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -203,7 +204,19 @@ export function StoreOrderPage() {
             </p>
           )}
           {scopeReady && !query.isLoading && !query.isError && (
-            <StoreOrderTable orders={orders} showProgress={isOwner} />
+            <StoreOrderTable
+              orders={orders}
+              showProgress={isOwner}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {scopeReady && pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -214,9 +227,13 @@ export function StoreOrderPage() {
 function StoreOrderTable({
   orders,
   showProgress,
+  sort,
+  onSort,
 }: {
   orders: StoreOrderListItem[]
   showProgress: boolean
+  sort?: string
+  onSort: (field: string) => void
 }) {
   if (orders.length === 0) {
     return (
@@ -229,14 +246,31 @@ function StoreOrderTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>주문 번호</TableHead>
-          <TableHead>지점</TableHead>
-          <TableHead>배정 창고</TableHead>
-          <TableHead>{showProgress ? "진행 상황" : "상태"}</TableHead>
+          <SortableHead field="orderNo" sort={sort} onSort={onSort}>
+            주문 번호
+          </SortableHead>
+          <SortableHead field="storeName" sort={sort} onSort={onSort}>
+            지점
+          </SortableHead>
+          <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+            배정 창고
+          </SortableHead>
+          {/* 진행 단계(progressStage)는 계산 값이라 서버가 정렬을 지원하지 않는다. */}
+          {showProgress ? (
+            <TableHead>진행 상황</TableHead>
+          ) : (
+            <SortableHead field="status" sort={sort} onSort={onSort}>
+              상태
+            </SortableHead>
+          )}
           <TableHead className="text-right">항목 수</TableHead>
           <TableHead className="text-right">총액</TableHead>
-          <TableHead>배송 요청</TableHead>
-          <TableHead>요청일시</TableHead>
+          <SortableHead field="requestedDeliveryAt" sort={sort} onSort={onSort}>
+            배송 요청
+          </SortableHead>
+          <SortableHead field="requestedAt" sort={sort} onSort={onSort}>
+            요청일시
+          </SortableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
