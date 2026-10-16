@@ -62,10 +62,6 @@ export function SupplierOrderPage() {
       <Card>
         <CardHeader>
           <CardTitle>공급처 발주서 목록</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            발주서는 본사가 창고 발주 요청을 확정하면 공급처별로 자동
-            생성됩니다. 입고는 발주서 상세에서 등록합니다.
-          </p>
           <div className="mt-3 flex flex-wrap items-end gap-4">
             <div className="w-48">
               <Label htmlFor="sup-keyword">발주서·요청 번호</Label>

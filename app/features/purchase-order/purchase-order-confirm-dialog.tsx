@@ -5,7 +5,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -124,11 +123,6 @@ function ConfirmForm({
     <>
       <DialogHeader>
         <DialogTitle>발주 확정</DialogTitle>
-        <DialogDescription>
-          항목마다 공급처를 지정하면 공급처별로 발주서가 생성됩니다. 확정하면
-          항목·수량을 수정할 수 없고, 변경이 필요하면 취소 후 다시 요청해야
-          합니다.
-        </DialogDescription>
       </DialogHeader>
 
       {loading && (

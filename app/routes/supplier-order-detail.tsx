@@ -13,11 +13,7 @@ export default function SupplierOrderDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="공급처 발주서"
-          title="공급처 발주서 상세"
-          description="발주 항목과 입고 진행 상황을 확인하고 입고를 등록합니다."
-        />
+        <AppHeader section="공급처 발주서" title="공급처 발주서 상세" />
         {Number.isFinite(id) ? (
           <SupplierOrderDetailPage supplierOrderId={id} />
         ) : (

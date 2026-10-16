@@ -8,11 +8,7 @@ export default function Products() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="상품"
-          title="상품 관리"
-          description="상품과 SKU를 등록하고 조회합니다."
-        />
+        <AppHeader section="상품" title="상품 관리" />
         <ProductPage />
       </SidebarInset>
     </SidebarProvider>

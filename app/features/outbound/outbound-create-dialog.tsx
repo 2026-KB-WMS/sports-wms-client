@@ -5,7 +5,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -74,18 +73,16 @@ function CreateForm({
     <>
       <DialogHeader>
         <DialogTitle>출고 생성</DialogTitle>
-        <DialogDescription>
-          선택한 SKU의 재고 할당을 묶어 출고를 만듭니다. 선택하지 않은 SKU의
-          할당은 남아 있어 나중에 따로 출고할 수 있습니다. 만든 뒤에는 묶인
-          할당을 해제할 수 없습니다.
-        </DialogDescription>
       </DialogHeader>
       {allocations.isLoading && (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       )}
       {allocations.isError && (
         <p className="text-sm text-destructive">
-          {getErrorMessage(allocations.error, "재고 할당을 불러오지 못했습니다.")}
+          {getErrorMessage(
+            allocations.error,
+            "재고 할당을 불러오지 못했습니다."
+          )}
         </p>
       )}
       {options.length > 0 && (

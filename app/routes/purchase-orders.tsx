@@ -8,11 +8,7 @@ export default function PurchaseOrders() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="창고 발주"
-          title="창고 발주 관리"
-          description="공급처에 보내는 발주를 등록하고 확정합니다."
-        />
+        <AppHeader section="창고 발주" title="창고 발주 관리" />
         <PurchaseOrderPage />
       </SidebarInset>
     </SidebarProvider>

@@ -8,11 +8,7 @@ export default function StoreOrders() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="지점 발주"
-          title="지점 발주 관리"
-          description="지점이 창고에 요청한 발주를 등록하고 처리합니다."
-        />
+        <AppHeader section="지점 발주" title="지점 발주 관리" />
         <StoreOrderPage />
       </SidebarInset>
     </SidebarProvider>

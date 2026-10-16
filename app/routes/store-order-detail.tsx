@@ -13,11 +13,7 @@ export default function StoreOrderDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="지점 발주"
-          title="지점 발주 상세"
-          description="발주 항목, 출고 현황, 상태 이력을 확인하고 처리합니다."
-        />
+        <AppHeader section="지점 발주" title="지점 발주 상세" />
         {Number.isFinite(id) ? (
           <StoreOrderDetailPage storeOrderId={id} />
         ) : (

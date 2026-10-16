@@ -13,11 +13,7 @@ export default function PurchaseOrderDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="창고 발주"
-          title="창고 발주 상세"
-          description="발주 항목과 입고 진행 상황을 확인합니다."
-        />
+        <AppHeader section="창고 발주" title="창고 발주 상세" />
         {Number.isFinite(id) ? (
           <PurchaseOrderDetailPage purchaseOrderId={id} />
         ) : (

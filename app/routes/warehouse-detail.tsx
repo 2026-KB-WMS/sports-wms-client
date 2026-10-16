@@ -13,11 +13,7 @@ export default function WarehouseDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="창고"
-          title="창고 상세"
-          description="창고 구역 현황을 확인합니다."
-        />
+        <AppHeader section="창고" title="창고 상세" />
         {Number.isFinite(id) ? (
           <WarehouseDetailPage warehouseId={id} />
         ) : (

@@ -8,11 +8,7 @@ export default function Outbounds() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="출고"
-          title="출고 관리"
-          description="피킹부터 배송까지 출고를 처리합니다."
-        />
+        <AppHeader section="출고" title="출고 관리" />
         <OutboundPage />
       </SidebarInset>
     </SidebarProvider>

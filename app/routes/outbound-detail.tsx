@@ -13,11 +13,7 @@ export default function OutboundDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="출고"
-          title="출고 상세"
-          description="출고 항목을 확인하고 피킹·배송을 처리합니다."
-        />
+        <AppHeader section="출고" title="출고 상세" />
         {Number.isFinite(id) ? (
           <OutboundDetailPage outboundId={id} />
         ) : (

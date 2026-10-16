@@ -8,11 +8,7 @@ export default function Users() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="사용자"
-          title="사용자 관리"
-          description="가입 신청을 승인하고 계정 정보와 상태를 관리합니다."
-        />
+        <AppHeader section="사용자" title="사용자 관리" />
         <UserPage />
       </SidebarInset>
     </SidebarProvider>

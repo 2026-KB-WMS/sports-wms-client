@@ -8,11 +8,7 @@ export default function Allocations() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="재고 할당"
-          title="재고 할당"
-          description="지점 발주에 예약된 재고를 확인하고 해제합니다."
-        />
+        <AppHeader section="재고 할당" title="재고 할당" />
         <AllocationPage />
       </SidebarInset>
     </SidebarProvider>

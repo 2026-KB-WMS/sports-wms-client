@@ -8,11 +8,7 @@ export default function Stores() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="지점"
-          title="지점 관리"
-          description="지점을 등록하고 점주를 배정합니다."
-        />
+        <AppHeader section="지점" title="지점 관리" />
         <StorePage />
       </SidebarInset>
     </SidebarProvider>

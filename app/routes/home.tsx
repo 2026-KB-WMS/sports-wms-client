@@ -27,7 +27,7 @@ export default function Home() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader section="개요" title="전체 현황" description="창고·재고 현황을 한눈에 확인하세요." />
+        <AppHeader section="개요" title="전체 현황" />
 
         <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -41,7 +41,9 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold">—</p>
-                  <p className="mt-1 text-xs text-muted-foreground">API 연동 예정</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    API 연동 예정
+                  </p>
                 </CardContent>
               </Card>
             ))}

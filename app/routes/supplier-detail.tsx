@@ -13,11 +13,7 @@ export default function SupplierDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="공급처"
-          title="공급처 상세"
-          description="공급처 정보를 확인하고 수정합니다."
-        />
+        <AppHeader section="공급처" title="공급처 상세" />
         {Number.isFinite(id) ? (
           <SupplierDetailPage supplierId={id} />
         ) : (

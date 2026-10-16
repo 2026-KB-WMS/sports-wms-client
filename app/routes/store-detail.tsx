@@ -13,11 +13,7 @@ export default function StoreDetail() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="지점"
-          title="지점 상세"
-          description="지점 정보와 점주·담당자 배정을 관리합니다."
-        />
+        <AppHeader section="지점" title="지점 상세" />
         {Number.isFinite(id) ? (
           <StoreDetailPage storeId={id} />
         ) : (

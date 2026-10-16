@@ -64,9 +64,6 @@ export function OutboundPage() {
       <Card>
         <CardHeader>
           <CardTitle>출고 목록</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            출고는 지점 발주 상세에서 재고를 할당한 뒤 만듭니다.
-          </p>
           <div className="mt-3 flex flex-wrap items-end gap-4">
             <div className="w-48">
               <Label htmlFor="ob-keyword">출고·발주 번호</Label>

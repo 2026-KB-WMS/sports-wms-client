@@ -8,11 +8,7 @@ export default function Suppliers() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader
-          section="공급처"
-          title="공급처 관리"
-          description="발주 대상 공급처를 등록하고 관리합니다."
-        />
+        <AppHeader section="공급처" title="공급처 관리" />
         <SupplierPage />
       </SidebarInset>
     </SidebarProvider>

@@ -4,7 +4,6 @@ import { Button } from "~/components/ui/button"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -76,11 +75,6 @@ function AllocateForm({
       <>
         <DialogHeader>
           <DialogTitle>재고 할당 완료</DialogTitle>
-          <DialogDescription>
-            {shortages.length === 0
-              ? "선택한 항목을 모두 할당했습니다."
-              : "재고가 부족한 항목은 일부만 할당했습니다. 재고가 입고된 뒤 다시 할당하면 남은 수량만 이어서 할당됩니다."}
-          </DialogDescription>
         </DialogHeader>
         {shortages.length > 0 && (
           <ul className="divide-y rounded-md border text-sm">
@@ -111,11 +105,6 @@ function AllocateForm({
     <>
       <DialogHeader>
         <DialogTitle>재고 할당</DialogTitle>
-        <DialogDescription>
-          선택한 SKU의 남은 수량을 유통기한이 빠른 재고부터(FEFO) 예약합니다.
-          재고가 모자란 항목은 가용 수량만큼만 할당되고, 선택한 항목 전부에서 할당할
-          재고가 없으면 아무것도 할당되지 않습니다.
-        </DialogDescription>
       </DialogHeader>
       <SkuSelectList
         options={options}
