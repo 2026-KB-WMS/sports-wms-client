@@ -17,6 +17,8 @@ export function useInventories(
   return useQuery({
     queryKey: ["inventory", "summary", params],
     queryFn: () => inventoryApi.getInventories(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -37,6 +39,8 @@ export function useInventoriesByLot(
   return useQuery({
     queryKey: ["inventory", "by-lot", params],
     queryFn: () => inventoryApi.getInventoriesByLot(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -69,6 +73,8 @@ export function useLots(params?: Parameters<typeof inventoryApi.getLots>[0]) {
   return useQuery({
     queryKey: ["inventory", "lots", params],
     queryFn: () => inventoryApi.getLots(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 

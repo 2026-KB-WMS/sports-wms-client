@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { ListData, PagedData, PageParams } from "./types"
 
 /**
  * 재고 도메인 (Inventory / Lot / Transaction) API.
@@ -24,12 +24,14 @@ export interface InventorySkuSummary {
   defectiveQuantity: number
 }
 
-export function getInventories(params?: {
-  skuId?: number
-  warehouseId?: number
-  keyword?: string
-}) {
-  return apiClient.get<ListData<InventorySkuSummary>>("/api/v1/inventory", {
+export function getInventories(
+  params?: PageParams & {
+    skuId?: number
+    warehouseId?: number
+    keyword?: string
+  }
+) {
+  return apiClient.get<PagedData<InventorySkuSummary>>("/api/v1/inventory", {
     query: params,
   })
 }
@@ -46,15 +48,17 @@ export interface InventorySectionSummary extends InventorySkuSummary {
   categoryName: string | null
 }
 
-/** 정렬 고정(창고→구역→SKU), 페이징 없음. 비담당 창고·구역은 403, 없는 필터 대상은 404. 카테고리는 하위 미포함. */
-export function getInventoriesBySection(params?: {
-  warehouseId?: number
-  sectionId?: number
-  categoryId?: number
-  skuId?: number
-  keyword?: string
-}) {
-  return apiClient.get<ListData<InventorySectionSummary>>(
+/** 기본 정렬은 창고→구역→SKU. 비담당 창고·구역은 403, 없는 필터 대상은 404. 카테고리는 하위 미포함. */
+export function getInventoriesBySection(
+  params?: PageParams & {
+    warehouseId?: number
+    sectionId?: number
+    categoryId?: number
+    skuId?: number
+    keyword?: string
+  }
+) {
+  return apiClient.get<PagedData<InventorySectionSummary>>(
     "/api/v1/inventory/by-section",
     { query: params }
   )
@@ -81,17 +85,20 @@ export interface InventoryLotView {
   lastCountedAt: string | null
 }
 
-export function getInventoriesByLot(params?: {
-  skuId?: number
-  warehouseId?: number
-  sectionId?: number
-  expiringBefore?: string
-  qualityStatus?: QualityStatus
-  includeEmpty?: boolean
-}) {
-  return apiClient.get<ListData<InventoryLotView>>("/api/v1/inventory/by-lot", {
-    query: params,
-  })
+export function getInventoriesByLot(
+  params?: PageParams & {
+    skuId?: number
+    warehouseId?: number
+    sectionId?: number
+    expiringBefore?: string
+    qualityStatus?: QualityStatus
+    includeEmpty?: boolean
+  }
+) {
+  return apiClient.get<PagedData<InventoryLotView>>(
+    "/api/v1/inventory/by-lot",
+    { query: params }
+  )
 }
 
 export interface InventoryDetail {
@@ -169,18 +176,20 @@ export interface InventoryTransaction {
   createdAt: string
 }
 
-export function getTransactions(params?: {
-  warehouseId?: number
-  sectionId?: number
-  skuId?: number
-  lotId?: number
-  transactionType?: TransactionType
-  referenceType?: ReferenceType
-  referenceId?: number
-  createdFrom?: string
-  createdTo?: string
-}) {
-  return apiClient.get<ListData<InventoryTransaction>>(
+export function getTransactions(
+  params?: PageParams & {
+    warehouseId?: number
+    sectionId?: number
+    skuId?: number
+    lotId?: number
+    transactionType?: TransactionType
+    referenceType?: ReferenceType
+    referenceId?: number
+    createdFrom?: string
+    createdTo?: string
+  }
+) {
+  return apiClient.get<PagedData<InventoryTransaction>>(
     "/api/v1/inventory/transactions",
     {
       query: params,
@@ -251,13 +260,15 @@ export interface LotSummary {
   unitCost: number | null
 }
 
-export function getLots(params?: {
-  skuId?: number
-  supplierId?: number
-  expiringBefore?: string
-  keyword?: string
-}) {
-  return apiClient.get<ListData<LotSummary>>("/api/v1/lots", { query: params })
+export function getLots(
+  params?: PageParams & {
+    skuId?: number
+    supplierId?: number
+    expiringBefore?: string
+    keyword?: string
+  }
+) {
+  return apiClient.get<PagedData<LotSummary>>("/api/v1/lots", { query: params })
 }
 
 export interface LotDetail extends LotSummary {
