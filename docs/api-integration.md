@@ -19,7 +19,7 @@ API 계약 본문은 wms-server의 `docs/api/*.md`가 기준이다([README](../R
 | 인증(JWT) 로그인 연동 완료(#31). 토큰은 `app/lib/auth-token.ts`가 저장하고 `client.ts`가 `Authorization: Bearer`로 붙인다 | 401은 토큰 삭제 후 `/login`으로 이동(`AuthGate`). 로그인·가입의 401은 제외 |
 | ~~처리 사용자를 쿼리 파라미터 `userId`로 받음~~ → 서버가 토큰에서 채움(#170) | 클라이언트는 `userId`를 보내지 않는다(#32). `/warehouses/my`·`/stores/my`도 토큰 기준이다. `useCurrentUser()`는 화면 표시·작성자 비교용 사용자 정보만 준다 |
 | 역할별 403이 동작하지 않음 | 화면에서 역할로 메뉴·버튼을 숨기되, 서버 403 처리도 구현해 둔다 |
-| 페이지네이션은 도메인별로 필요한 목록에만 적용(서버 ADR-032). 적용 전 목록은 `data.items` 전체를 고정 정렬로 반환 | 적용된 목록(입고·창고 발주·공급처 발주서·지점 발주·출고·재고 할당·재고 5종)은 `page`·`size`·`sort`를 서버에 보내고 `PagedData`·`usePaging`·`SortableHead`·`Pager`(`components/common/list-paging.tsx`)를 쓴다. 정렬은 서버 sort로만 하고 필터·정렬 변경 시 page를 1로 돌린다. 나머지 목록은 계속 클라이언트에서 처리 |
+| 페이지네이션은 도메인별로 필요한 목록에만 적용(서버 ADR-032). 적용 전 목록은 `data.items` 전체를 고정 정렬로 반환 | 적용된 목록(입고·창고 발주·공급처 발주서·지점 발주·출고·재고 할당·재고 5종·상품·SKU)은 `page`·`size`·`sort`를 서버에 보내고 `PagedData`·`usePaging`·`SortableHead`·`Pager`(`components/common/list-paging.tsx`)를 쓴다. 정렬은 서버 sort로만 하고 필터·정렬 변경 시 page를 1로 돌린다. 나머지 목록은 계속 클라이언트에서 처리 |
 | 날짜·시각에 오프셋 없음, KST 기준 (`2026-10-05T14:30:00`) | 시간대 변환 없이 그대로 표시·전송한다 |
 | `errors[]`는 요청 본문 검증 실패에만 채워짐 | 비즈니스 오류(409)는 `message`와 `errorCode`로 안내한다 |
 | 존재하지 않는 필터 값은 일부 API에서 404, 일부는 빈 목록 | 서버 문서의 해당 엔드포인트 항목을 따른다 |

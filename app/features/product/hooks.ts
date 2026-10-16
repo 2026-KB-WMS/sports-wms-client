@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as productApi from "~/lib/api/product"
 
@@ -28,6 +33,8 @@ export function useProducts(
   return useQuery({
     queryKey: ["product", "products", params],
     queryFn: () => productApi.getProducts(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -43,6 +50,8 @@ export function useSkus(params?: Parameters<typeof productApi.getSkus>[0]) {
   return useQuery({
     queryKey: ["product", "skus", params],
     queryFn: () => productApi.getSkus(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 

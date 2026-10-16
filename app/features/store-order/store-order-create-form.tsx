@@ -175,8 +175,12 @@ function LineEditor({
   const [keyword, setKeyword] = useState("")
   const [skuId, setSkuId] = useState("")
   // 발주 가능한 SKU만(활성). 검색어로 후보를 좁힌다.
-  const skus =
-    useSkus({ keyword: keyword || undefined, isActive: true }).data?.items ?? []
+  const skusQuery = useSkus({
+    keyword: keyword || undefined,
+    isActive: true,
+    size: 100,
+  })
+  const skus = skusQuery.data?.items ?? []
   const picked = skus.find((s) => String(s.skuId) === skuId)
   const alreadyAdded = picked && lines.some((l) => l.skuId === picked.skuId)
 
@@ -230,6 +234,12 @@ function LineEditor({
           항목 추가
         </Button>
       </div>
+      {skusQuery.data &&
+        skusQuery.data.pageInfo.totalElements > skus.length && (
+          <p className="text-xs text-muted-foreground">
+            SKU가 많아 일부만 표시됩니다. 검색어로 좁혀 주세요.
+          </p>
+        )}
       {alreadyAdded && (
         <p className="text-sm text-destructive">이미 추가한 SKU입니다.</p>
       )}

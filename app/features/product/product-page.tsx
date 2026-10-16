@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -87,8 +88,11 @@ export function ProductPage() {
     isActive: activeFilterToBoolean(activeFilter),
   }
 
-  const productsQuery = useProducts(filters)
-  const skusQuery = useSkus(filters)
+  const filterKey = JSON.stringify(filters)
+  const productsPaging = usePaging(filterKey)
+  const skusPaging = usePaging(filterKey)
+  const productsQuery = useProducts({ ...filters, ...productsPaging.params })
+  const skusQuery = useSkus({ ...filters, ...skusPaging.params })
 
   const brands = brandsQuery.data?.items ?? []
   const categories = categoriesQuery.data?.items ?? []
@@ -96,6 +100,8 @@ export function ProductPage() {
   const skus = skusQuery.data?.items ?? []
 
   const currentQuery = tab === "products" ? productsQuery : skusQuery
+  const currentPaging = tab === "products" ? productsPaging : skusPaging
+  const pageInfo = currentQuery.data?.pageInfo
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -270,10 +276,29 @@ export function ProductPage() {
             )}
             {!currentQuery.isLoading &&
               !currentQuery.isError &&
-              tab === "products" && <ProductTable products={products} />}
+              tab === "products" && (
+                <ProductTable
+                  products={products}
+                  sort={pageInfo?.sort}
+                  onSort={productsPaging.toggleSort}
+                />
+              )}
             {!currentQuery.isLoading &&
               !currentQuery.isError &&
-              tab === "skus" && <SkuTable skus={skus} />}
+              tab === "skus" && (
+                <SkuTable
+                  skus={skus}
+                  sort={pageInfo?.sort}
+                  onSort={skusPaging.toggleSort}
+                />
+              )}
+            {pageInfo && pageInfo.totalElements > 0 && (
+              <Pager
+                pageInfo={pageInfo}
+                onPage={currentPaging.setPage}
+                onSize={currentPaging.setSize}
+              />
+            )}
           </CardContent>
         </Card>
       )}
@@ -281,7 +306,15 @@ export function ProductPage() {
   )
 }
 
-function ProductTable({ products }: { products: ProductSummary[] }) {
+function ProductTable({
+  products,
+  sort,
+  onSort,
+}: {
+  products: ProductSummary[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   const { role } = useCurrentUser()
   const canEdit = role === "HQ_ADMIN"
   const update = useUpdateProduct()
@@ -296,11 +329,17 @@ function ProductTable({ products }: { products: ProductSummary[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>상품 코드</TableHead>
-          <TableHead>상품명</TableHead>
+          <SortableHead field="productCode" sort={sort} onSort={onSort}>
+            상품 코드
+          </SortableHead>
+          <SortableHead field="productName" sort={sort} onSort={onSort}>
+            상품명
+          </SortableHead>
           <TableHead>브랜드</TableHead>
           <TableHead>카테고리</TableHead>
-          <TableHead>상태</TableHead>
+          <SortableHead field="isActive" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
           {canEdit && <TableHead />}
         </TableRow>
       </TableHeader>
@@ -350,7 +389,15 @@ function ProductTable({ products }: { products: ProductSummary[] }) {
   )
 }
 
-function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
+function SkuTable({
+  skus,
+  sort,
+  onSort,
+}: {
+  skus: ProductSkuListItem[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   const { role } = useCurrentUser()
   const canEdit = role === "HQ_ADMIN"
   const [editing, setEditing] = useState<ProductSkuListItem | null>(null)
@@ -371,14 +418,27 @@ function SkuTable({ skus }: { skus: ProductSkuListItem[] }) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>SKU</TableHead>
-            <TableHead>상품명</TableHead>
+            <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+              SKU
+            </SortableHead>
+            <SortableHead field="productName" sort={sort} onSort={onSort}>
+              상품명
+            </SortableHead>
             <TableHead>단위</TableHead>
             <TableHead className="text-right">매입가</TableHead>
-            <TableHead className="text-right">공급가</TableHead>
+            <SortableHead
+              field="currentSupplyPrice"
+              sort={sort}
+              onSort={onSort}
+              className="text-right"
+            >
+              공급가
+            </SortableHead>
             <TableHead className="text-right">안전재고</TableHead>
             <TableHead>옵션</TableHead>
-            <TableHead>상태</TableHead>
+            <SortableHead field="isActive" sort={sort} onSort={onSort}>
+              상태
+            </SortableHead>
             {canEdit && <TableHead />}
           </TableRow>
         </TableHeader>

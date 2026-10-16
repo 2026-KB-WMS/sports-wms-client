@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { ListData, PagedData, PageParams } from "./types"
 
 /**
  * 상품 도메인 (Brand / Category / Product / ProductSku / OptionGroup / OptionValue) API.
@@ -150,13 +150,15 @@ export interface ProductUpdateInput {
   specOptionValueIds?: number[]
 }
 
-export function getProducts(params?: {
-  brandId?: number
-  categoryId?: number
-  keyword?: string
-  isActive?: boolean
-}) {
-  return apiClient.get<ListData<ProductSummary>>("/api/v1/products", {
+export function getProducts(
+  params?: PageParams & {
+    brandId?: number
+    categoryId?: number
+    keyword?: string
+    isActive?: boolean
+  }
+) {
+  return apiClient.get<PagedData<ProductSummary>>("/api/v1/products", {
     query: params,
   })
 }
@@ -225,14 +227,16 @@ export interface ProductSkuCreateInput {
   optionValueIds?: number[]
 }
 
-export function getSkus(params?: {
-  productId?: number
-  brandId?: number
-  categoryId?: number
-  keyword?: string
-  isActive?: boolean
-}) {
-  return apiClient.get<ListData<ProductSkuListItem>>("/api/v1/products/skus", {
+export function getSkus(
+  params?: PageParams & {
+    productId?: number
+    brandId?: number
+    categoryId?: number
+    keyword?: string
+    isActive?: boolean
+  }
+) {
+  return apiClient.get<PagedData<ProductSkuListItem>>("/api/v1/products/skus", {
     query: params,
   })
 }
