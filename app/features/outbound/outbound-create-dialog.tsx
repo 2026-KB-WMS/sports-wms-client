@@ -52,7 +52,11 @@ function CreateForm({
   const [note, setNote] = useState("")
 
   // 이미 출고에 묶인 할당도 섞여 있을 수 있다(목록에 연결 정보가 없음). 묶을 게 없으면 서버가 409 NO_ALLOCATION.
-  const allocations = useAllocations({ storeOrderId, status: "ALLOCATED" })
+  const allocations = useAllocations({
+    storeOrderId,
+    status: "ALLOCATED",
+    size: 100,
+  })
   const bySku = new Map<number, SkuOption & { quantity: number }>()
   for (const a of allocations.data?.items ?? []) {
     const prev = bySku.get(a.skuId)

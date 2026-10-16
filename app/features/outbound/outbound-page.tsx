@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -40,15 +41,18 @@ export function OutboundPage() {
   const [createdTo, setCreatedTo] = useState("")
 
   const warehouses = useSelectableWarehouses()
-  const query = useOutbounds({
+  const filters = {
     status: (status || undefined) as OutboundStatus | undefined,
     warehouseId: warehouseId ? Number(warehouseId) : undefined,
     keyword: keyword || undefined,
     // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
     createdFrom: createdFrom ? `${createdFrom}T00:00:00` : undefined,
     createdTo: createdTo ? `${createdTo}T23:59:59` : undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useOutbounds({ ...filters, ...paging.params })
   const outbounds = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   if (role === "STORE_OWNER") {
     return (
@@ -136,7 +140,18 @@ export function OutboundPage() {
             </p>
           )}
           {!query.isLoading && !query.isError && (
-            <OutboundTable outbounds={outbounds} />
+            <OutboundTable
+              outbounds={outbounds}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -144,7 +159,15 @@ export function OutboundPage() {
   )
 }
 
-function OutboundTable({ outbounds }: { outbounds: OutboundListItem[] }) {
+function OutboundTable({
+  outbounds,
+  sort,
+  onSort,
+}: {
+  outbounds: OutboundListItem[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   if (outbounds.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -156,14 +179,33 @@ function OutboundTable({ outbounds }: { outbounds: OutboundListItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>출고 번호</TableHead>
+          <SortableHead field="outboundNo" sort={sort} onSort={onSort}>
+            출고 번호
+          </SortableHead>
           <TableHead>발주 번호</TableHead>
-          <TableHead>지점</TableHead>
-          <TableHead>창고</TableHead>
-          <TableHead>상태</TableHead>
-          <TableHead className="text-right">항목 수</TableHead>
-          <TableHead>배송 시작</TableHead>
-          <TableHead>생성일시</TableHead>
+          <SortableHead field="storeName" sort={sort} onSort={onSort}>
+            지점
+          </SortableHead>
+          <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+            창고
+          </SortableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
+          <SortableHead
+            field="lineCount"
+            sort={sort}
+            onSort={onSort}
+            className="text-right"
+          >
+            항목 수
+          </SortableHead>
+          <SortableHead field="shippedAt" sort={sort} onSort={onSort}>
+            배송 시작
+          </SortableHead>
+          <SortableHead field="createdAt" sort={sort} onSort={onSort}>
+            생성일시
+          </SortableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

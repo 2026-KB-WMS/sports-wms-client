@@ -1,5 +1,5 @@
 import { apiClient } from "./client"
-import type { ListData } from "./types"
+import type { ListData, PagedData, PageParams } from "./types"
 
 /**
  * 출고(Outbound)·재고 할당(StockAllocation) API.
@@ -65,14 +65,16 @@ export interface AllocationDetail {
   outboundId: number | null
 }
 
-export function getAllocations(params?: {
-  storeOrderId?: number
-  warehouseId?: number
-  skuId?: number
-  status?: AllocationStatus
-  keyword?: string
-}) {
-  return apiClient.get<ListData<Allocation>>("/api/v1/allocations", {
+export function getAllocations(
+  params?: PageParams & {
+    storeOrderId?: number
+    warehouseId?: number
+    skuId?: number
+    status?: AllocationStatus
+    keyword?: string
+  }
+) {
+  return apiClient.get<PagedData<Allocation>>("/api/v1/allocations", {
     query: params,
   })
 }
@@ -180,16 +182,18 @@ export interface OutboundDetails {
   updatedAt: string
 }
 
-export function getOutbounds(params?: {
-  status?: OutboundStatus
-  warehouseId?: number
-  storeId?: number
-  storeOrderId?: number
-  keyword?: string
-  createdFrom?: string
-  createdTo?: string
-}) {
-  return apiClient.get<ListData<OutboundListItem>>("/api/v1/outbounds", {
+export function getOutbounds(
+  params?: PageParams & {
+    status?: OutboundStatus
+    warehouseId?: number
+    storeId?: number
+    storeOrderId?: number
+    keyword?: string
+    createdFrom?: string
+    createdTo?: string
+  }
+) {
+  return apiClient.get<PagedData<OutboundListItem>>("/api/v1/outbounds", {
     query: params,
   })
 }
