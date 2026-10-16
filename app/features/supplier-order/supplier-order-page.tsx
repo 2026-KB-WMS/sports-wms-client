@@ -205,8 +205,22 @@ function SupplierOrderTable({
           <SortableHead field="status" sort={sort} onSort={onSort}>
             상태
           </SortableHead>
-          <TableHead className="text-right">항목 수</TableHead>
-          <TableHead className="text-right">총액</TableHead>
+          <SortableHead
+            field="lineCount"
+            sort={sort}
+            onSort={onSort}
+            className="text-right"
+          >
+            항목 수
+          </SortableHead>
+          <SortableHead
+            field="totalAmount"
+            sort={sort}
+            onSort={onSort}
+            className="text-right"
+          >
+            총액
+          </SortableHead>
           <SortableHead field="createdAt" sort={sort} onSort={onSort}>
             등록일시
           </SortableHead>
