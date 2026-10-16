@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as inboundApi from "~/lib/api/inbound"
 import { useCurrentUser } from "~/lib/current-user"
@@ -14,6 +19,8 @@ export function useInbounds(
   return useQuery({
     queryKey: ["inbound", "list", params],
     queryFn: () => inboundApi.getInbounds(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus } from "lucide-react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -49,7 +50,7 @@ export function PurchaseOrderPage() {
   const warehouses = useSelectableWarehouses()
   const suppliers = useSuppliers().data?.items ?? []
 
-  const query = usePurchaseOrders({
+  const filters = {
     status: (status || undefined) as PurchaseOrderStatus | undefined,
     warehouseId: warehouseId ? Number(warehouseId) : undefined,
     supplierId: supplierId ? Number(supplierId) : undefined,
@@ -57,8 +58,11 @@ export function PurchaseOrderPage() {
     // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
     createdFrom: createdFrom ? `${createdFrom}T00:00:00` : undefined,
     createdTo: createdTo ? `${createdTo}T23:59:59` : undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = usePurchaseOrders({ ...filters, ...paging.params })
   const orders = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   if (role === "STORE_OWNER") {
     return (
@@ -173,7 +177,18 @@ export function PurchaseOrderPage() {
             </p>
           )}
           {!query.isLoading && !query.isError && (
-            <PurchaseOrderTable orders={orders} />
+            <PurchaseOrderTable
+              orders={orders}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -181,7 +196,15 @@ export function PurchaseOrderPage() {
   )
 }
 
-function PurchaseOrderTable({ orders }: { orders: PurchaseOrderListItem[] }) {
+function PurchaseOrderTable({
+  orders,
+  sort,
+  onSort,
+}: {
+  orders: PurchaseOrderListItem[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   if (orders.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -193,14 +216,24 @@ function PurchaseOrderTable({ orders }: { orders: PurchaseOrderListItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>발주 번호</TableHead>
-          <TableHead>창고</TableHead>
+          <SortableHead field="purchaseOrderNo" sort={sort} onSort={onSort}>
+            발주 번호
+          </SortableHead>
+          <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+            창고
+          </SortableHead>
           <TableHead>공급처</TableHead>
-          <TableHead>상태</TableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
           <TableHead className="text-right">항목 수</TableHead>
           <TableHead className="text-right">총액</TableHead>
-          <TableHead>입고 예정</TableHead>
-          <TableHead>등록일시</TableHead>
+          <SortableHead field="expectedAt" sort={sort} onSort={onSort}>
+            입고 예정
+          </SortableHead>
+          <SortableHead field="createdAt" sort={sort} onSort={onSort}>
+            등록일시
+          </SortableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

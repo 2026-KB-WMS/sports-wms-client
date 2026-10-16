@@ -178,7 +178,7 @@ function LinesCard({ order }: { order: SupplierOrder }) {
 
 /** 이 발주서에 연결된 입고. 진행 중 입고는 발주서당 1건이다. */
 function InboundsCard({ supplierOrderId }: { supplierOrderId: number }) {
-  const query = useInbounds({ supplierOrderId })
+  const query = useInbounds({ supplierOrderId, size: 100 })
   const inbounds = query.data?.items ?? []
 
   return (

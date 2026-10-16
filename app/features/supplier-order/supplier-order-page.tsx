@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -46,7 +47,7 @@ export function SupplierOrderPage() {
 
   const warehouses = useSelectableWarehouses()
   const suppliers = useSuppliers().data?.items ?? []
-  const query = useSupplierOrders({
+  const filters = {
     status: (status || undefined) as SupplierOrderStatus | undefined,
     warehouseId: warehouseId ? Number(warehouseId) : undefined,
     supplierId: supplierId ? Number(supplierId) : undefined,
@@ -54,8 +55,11 @@ export function SupplierOrderPage() {
     // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
     createdFrom: createdFrom ? `${createdFrom}T00:00:00` : undefined,
     createdTo: createdTo ? `${createdTo}T23:59:59` : undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useSupplierOrders({ ...filters, ...paging.params })
   const orders = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -149,7 +153,18 @@ export function SupplierOrderPage() {
             </p>
           )}
           {!query.isLoading && !query.isError && (
-            <SupplierOrderTable orders={orders} />
+            <SupplierOrderTable
+              orders={orders}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -157,7 +172,15 @@ export function SupplierOrderPage() {
   )
 }
 
-function SupplierOrderTable({ orders }: { orders: SupplierOrderListItem[] }) {
+function SupplierOrderTable({
+  orders,
+  sort,
+  onSort,
+}: {
+  orders: SupplierOrderListItem[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   if (orders.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -169,14 +192,24 @@ function SupplierOrderTable({ orders }: { orders: SupplierOrderListItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>발주서 번호</TableHead>
+          <SortableHead field="supplierOrderNo" sort={sort} onSort={onSort}>
+            발주서 번호
+          </SortableHead>
           <TableHead>요청 번호</TableHead>
-          <TableHead>창고</TableHead>
-          <TableHead>공급처</TableHead>
-          <TableHead>상태</TableHead>
+          <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+            창고
+          </SortableHead>
+          <SortableHead field="supplierName" sort={sort} onSort={onSort}>
+            공급처
+          </SortableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
           <TableHead className="text-right">항목 수</TableHead>
           <TableHead className="text-right">총액</TableHead>
-          <TableHead>등록일시</TableHead>
+          <SortableHead field="createdAt" sort={sort} onSort={onSort}>
+            등록일시
+          </SortableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

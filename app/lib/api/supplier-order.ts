@@ -1,6 +1,6 @@
 import { apiClient } from "./client"
 import type { SupplierOrderStatus } from "./purchase-order"
-import type { ListData } from "./types"
+import type { PagedData, PageParams } from "./types"
 
 /**
  * 공급처 발주서 API(조회 전용). 본사가 창고 발주 요청을 확정할 때 공급처당 한 건씩 자동 생성된다.
@@ -45,16 +45,18 @@ export interface SupplierOrder extends SupplierOrderListItem {
 }
 
 /** HQ_ADMIN 전체, WAREHOUSE_MANAGER는 담당 창고만(타 창고는 403). */
-export function getSupplierOrders(params?: {
-  status?: SupplierOrderStatus
-  warehouseId?: number
-  supplierId?: number
-  purchaseOrderId?: number
-  keyword?: string
-  createdFrom?: string
-  createdTo?: string
-}) {
-  return apiClient.get<ListData<SupplierOrderListItem>>(
+export function getSupplierOrders(
+  params?: PageParams & {
+    status?: SupplierOrderStatus
+    warehouseId?: number
+    supplierId?: number
+    purchaseOrderId?: number
+    keyword?: string
+    createdFrom?: string
+    createdTo?: string
+  }
+) {
+  return apiClient.get<PagedData<SupplierOrderListItem>>(
     "/api/v1/supplier-orders",
     { query: params }
   )

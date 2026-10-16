@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { LinkRow } from "~/components/common/link-row"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
@@ -38,15 +39,18 @@ export function InboundPage() {
   const [arrivedTo, setArrivedTo] = useState("")
 
   const warehouses = useSelectableWarehouses()
-  const query = useInbounds({
+  const filters = {
     status: (status || undefined) as InboundStatus | undefined,
     warehouseId: warehouseId ? Number(warehouseId) : undefined,
     keyword: keyword || undefined,
     // 양 끝 포함 조건이라 종료일은 그날 마지막 시각으로 보낸다.
     arrivedFrom: arrivedFrom ? `${arrivedFrom}T00:00:00` : undefined,
     arrivedTo: arrivedTo ? `${arrivedTo}T23:59:59` : undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useInbounds({ ...filters, ...paging.params })
   const inbounds = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   if (role === "STORE_OWNER") {
     return (
@@ -133,7 +137,18 @@ export function InboundPage() {
             </p>
           )}
           {!query.isLoading && !query.isError && (
-            <InboundTable inbounds={inbounds} />
+            <InboundTable
+              inbounds={inbounds}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
+            />
           )}
         </CardContent>
       </Card>
@@ -141,7 +156,15 @@ export function InboundPage() {
   )
 }
 
-function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
+function InboundTable({
+  inbounds,
+  sort,
+  onSort,
+}: {
+  inbounds: InboundListItem[]
+  sort?: string
+  onSort: (field: string) => void
+}) {
   if (inbounds.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
@@ -153,14 +176,24 @@ function InboundTable({ inbounds }: { inbounds: InboundListItem[] }) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>입고 번호</TableHead>
+          <SortableHead field="inboundNo" sort={sort} onSort={onSort}>
+            입고 번호
+          </SortableHead>
           <TableHead>발주서 번호</TableHead>
-          <TableHead>창고</TableHead>
+          <SortableHead field="warehouseName" sort={sort} onSort={onSort}>
+            창고
+          </SortableHead>
           <TableHead>공급처</TableHead>
-          <TableHead>상태</TableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
           <TableHead className="text-right">검수 항목</TableHead>
-          <TableHead>도착일시</TableHead>
-          <TableHead>입고일시</TableHead>
+          <SortableHead field="arrivedAt" sort={sort} onSort={onSort}>
+            도착일시
+          </SortableHead>
+          <SortableHead field="receivedAt" sort={sort} onSort={onSort}>
+            입고일시
+          </SortableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
