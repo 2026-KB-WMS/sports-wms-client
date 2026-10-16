@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router"
 
+import { Pager, SortableHead, usePaging } from "~/components/common/list-paging"
 import { ReasonDialog } from "~/components/common/reason-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -43,13 +44,16 @@ export function AllocationPage() {
   const release = useReleaseAllocation()
 
   const warehouses = useSelectableWarehouses()
-  const query = useAllocations({
+  const filters = {
     storeOrderId: storeOrderId ? Number(storeOrderId) : undefined,
     status: (status || undefined) as AllocationStatus | undefined,
     warehouseId: warehouseId ? Number(warehouseId) : undefined,
     keyword: keyword || undefined,
-  })
+  }
+  const paging = usePaging(JSON.stringify(filters))
+  const query = useAllocations({ ...filters, ...paging.params })
   const allocations = query.data?.items ?? []
+  const pageInfo = query.data?.pageInfo
 
   if (role === "STORE_OWNER") {
     return (
@@ -134,12 +138,21 @@ export function AllocationPage() {
           {!query.isLoading && !query.isError && (
             <AllocationTable
               allocations={allocations}
+              sort={pageInfo?.sort}
+              onSort={paging.toggleSort}
               warehouses={warehouses}
               canRelease={role === "WAREHOUSE_MANAGER"}
               onRelease={(a) => {
                 release.reset()
                 setReleasing(a)
               }}
+            />
+          )}
+          {pageInfo && pageInfo.totalElements > 0 && (
+            <Pager
+              pageInfo={pageInfo}
+              onPage={paging.setPage}
+              onSize={paging.setSize}
             />
           )}
         </CardContent>
@@ -172,11 +185,15 @@ export function AllocationPage() {
 
 function AllocationTable({
   allocations,
+  sort,
+  onSort,
   warehouses,
   canRelease,
   onRelease,
 }: {
   allocations: Allocation[]
+  sort?: string
+  onSort: (field: string) => void
   warehouses: { warehouseId: number; warehouseName: string }[]
   canRelease: boolean
   onRelease: (allocation: Allocation) => void
@@ -192,16 +209,31 @@ function AllocationTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>발주</TableHead>
+          <SortableHead field="orderNo" sort={sort} onSort={onSort}>
+            발주
+          </SortableHead>
           <TableHead>창고</TableHead>
-          <TableHead>SKU</TableHead>
+          <SortableHead field="skuCode" sort={sort} onSort={onSort}>
+            SKU
+          </SortableHead>
           <TableHead>로트</TableHead>
           <TableHead>유통기한</TableHead>
           <TableHead>구역</TableHead>
-          <TableHead className="text-right">할당</TableHead>
+          <SortableHead
+            field="allocatedQuantity"
+            sort={sort}
+            onSort={onSort}
+            className="text-right"
+          >
+            할당
+          </SortableHead>
           <TableHead className="text-right">피킹</TableHead>
-          <TableHead>상태</TableHead>
-          <TableHead>할당일시</TableHead>
+          <SortableHead field="status" sort={sort} onSort={onSort}>
+            상태
+          </SortableHead>
+          <SortableHead field="allocatedAt" sort={sort} onSort={onSort}>
+            할당일시
+          </SortableHead>
           <TableHead />
         </TableRow>
       </TableHeader>

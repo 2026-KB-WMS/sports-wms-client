@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import * as outboundApi from "~/lib/api/outbound"
 import { useCurrentUser } from "~/lib/current-user"
@@ -14,6 +19,8 @@ export function useAllocations(
   return useQuery({
     queryKey: ["outbound", "allocations", params],
     queryFn: () => outboundApi.getAllocations(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -23,6 +30,8 @@ export function useOutbounds(
   return useQuery({
     queryKey: ["outbound", "list", params],
     queryFn: () => outboundApi.getOutbounds(params),
+    // 페이지·정렬을 바꿀 때 목록이 로딩 문구로 바뀌어 스크롤이 위로 튀지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -85,8 +94,7 @@ export function useCreateOutbound() {
 export function useStartPicking() {
   const invalidate = useInvalidateFulfillment()
   return useMutation({
-    mutationFn: (outboundId: number) =>
-      outboundApi.startPicking(outboundId),
+    mutationFn: (outboundId: number) => outboundApi.startPicking(outboundId),
     onSettled: invalidate,
   })
 }
@@ -108,8 +116,7 @@ export function useCompletePicking() {
 export function useShipOutbound() {
   const invalidate = useInvalidateFulfillment()
   return useMutation({
-    mutationFn: (outboundId: number) =>
-      outboundApi.shipOutbound(outboundId),
+    mutationFn: (outboundId: number) => outboundApi.shipOutbound(outboundId),
     onSettled: invalidate,
   })
 }
@@ -117,8 +124,7 @@ export function useShipOutbound() {
 export function useDeliverOutbound() {
   const invalidate = useInvalidateFulfillment()
   return useMutation({
-    mutationFn: (outboundId: number) =>
-      outboundApi.deliverOutbound(outboundId),
+    mutationFn: (outboundId: number) => outboundApi.deliverOutbound(outboundId),
     onSettled: invalidate,
   })
 }
