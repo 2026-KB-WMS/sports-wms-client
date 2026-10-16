@@ -187,7 +187,14 @@ function InboundTable({
           <SortableHead field="status" sort={sort} onSort={onSort}>
             상태
           </SortableHead>
-          <TableHead className="text-right">검수 항목</TableHead>
+          <SortableHead
+            field="lineCount"
+            sort={sort}
+            onSort={onSort}
+            className="text-right"
+          >
+            검수 항목
+          </SortableHead>
           <SortableHead field="arrivedAt" sort={sort} onSort={onSort}>
             도착일시
           </SortableHead>
