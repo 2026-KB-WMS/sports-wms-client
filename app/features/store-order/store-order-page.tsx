@@ -20,6 +20,7 @@ import {
 import { formatDateTime, formatWon } from "~/features/purchase-order/format"
 import { useSelectableWarehouses } from "~/features/purchase-order/hooks"
 import { useMyStores, useStores } from "~/features/store/hooks"
+import { useInitialParam } from "~/lib/use-initial-param"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type {
   StoreOrderListItem,
@@ -51,7 +52,11 @@ export function StoreOrderPage() {
   const isOwner = role === "STORE_OWNER"
   const isManager = role === "WAREHOUSE_MANAGER"
 
-  const [status, setStatus] = useState("")
+  const initialStatus = useInitialParam(
+    "status",
+    STATUS_OPTIONS.map((o) => o.value)
+  )
+  const [status, setStatus] = useState(initialStatus)
   const [storeId, setStoreId] = useState("")
   const [warehouseId, setWarehouseId] = useState("")
   const [keyword, setKeyword] = useState("")

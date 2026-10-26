@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/table"
 import { useSelectableWarehouses } from "~/features/purchase-order/hooks"
 import { formatDateTime } from "~/features/purchase-order/format"
+import { useInitialParam } from "~/lib/use-initial-param"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { InboundListItem, InboundStatus } from "~/lib/api/inbound"
 import { useCurrentUser } from "~/lib/current-user"
@@ -32,7 +33,11 @@ const STATUS_OPTIONS: { value: InboundStatus; label: string }[] = [
 
 export function InboundPage() {
   const { role } = useCurrentUser()
-  const [status, setStatus] = useState("")
+  const initialStatus = useInitialParam(
+    "status",
+    STATUS_OPTIONS.map((o) => o.value)
+  )
+  const [status, setStatus] = useState(initialStatus)
   const [warehouseId, setWarehouseId] = useState("")
   const [keyword, setKeyword] = useState("")
   const [arrivedFrom, setArrivedFrom] = useState("")
