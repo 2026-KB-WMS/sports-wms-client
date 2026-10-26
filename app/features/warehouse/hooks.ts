@@ -12,11 +12,22 @@ import * as warehouseApi from "~/lib/api/warehouse"
  */
 
 export function useWarehouses(
-  params?: Parameters<typeof warehouseApi.getWarehouses>[0]
+  params?: Parameters<typeof warehouseApi.getWarehouses>[0],
+  enabled = true
 ) {
   return useQuery({
     queryKey: ["warehouse", "warehouses", params],
     queryFn: () => warehouseApi.getWarehouses(params),
+    enabled,
+  })
+}
+
+/** 창고 관리자의 담당 창고. 전체 창고 목록은 본사만 볼 수 있다. */
+export function useMyWarehouses(enabled = true) {
+  return useQuery({
+    queryKey: ["warehouse", "my"],
+    queryFn: () => warehouseApi.getMyWarehouses(),
+    enabled,
   })
 }
 

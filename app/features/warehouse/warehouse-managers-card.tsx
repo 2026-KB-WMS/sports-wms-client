@@ -95,7 +95,7 @@ export function WarehouseManagersCard({
                   <SortableHead field="assignedAt" sort={sort} onSort={onSort}>
                     배정일시
                   </SortableHead>
-                  <TableHead />
+                  <TableHead className="w-px" />
                 </TableRow>
               </TableHeader>
               <TableBody>

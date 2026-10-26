@@ -340,7 +340,7 @@ function ProductTable({
           <SortableHead field="isActive" sort={sort} onSort={onSort}>
             상태
           </SortableHead>
-          {canEdit && <TableHead />}
+          {canEdit && <TableHead className="w-px" />}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -439,7 +439,7 @@ function SkuTable({
             <SortableHead field="isActive" sort={sort} onSort={onSort}>
               상태
             </SortableHead>
-            {canEdit && <TableHead />}
+            {canEdit && <TableHead className="w-px" />}
           </TableRow>
         </TableHeader>
         <TableBody>

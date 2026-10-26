@@ -31,6 +31,11 @@ export function WarehouseHome() {
     : (warehouses[0]?.warehouseId ?? null)
   const summary = useWarehouseSummary(warehouseId)
   const data = summary.data
+  const wq = warehouseId != null ? `warehouseId=${warehouseId}` : ""
+  // 유통기한 임박 기준은 요약 API 기본값(30일)과 맞춘다.
+  const expiringBefore = new Date(
+    Date.now() + 30 * 86_400_000
+  ).toLocaleDateString("sv-SE")
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
@@ -67,13 +72,13 @@ export function WarehouseHome() {
               <StatCard
                 label="검수 전 (도착)"
                 value={`${formatNumber(data.pending.inbound.arrivedCount)}건`}
-                to="/inbounds?status=ARRIVED"
+                to={`/inbounds?status=ARRIVED&${wq}`}
                 highlight={data.pending.inbound.arrivedCount > 0}
               />
               <StatCard
                 label="검수 중"
                 value={`${formatNumber(data.pending.inbound.inspectingCount)}건`}
-                to="/inbounds?status=INSPECTING"
+                to={`/inbounds?status=INSPECTING&${wq}`}
               />
             </div>
           </section>
@@ -84,18 +89,18 @@ export function WarehouseHome() {
               <StatCard
                 label="피킹 전 (출고 준비)"
                 value={`${formatNumber(data.pending.outbound.readyCount)}건`}
-                to="/outbounds?status=READY"
+                to={`/outbounds?status=READY&${wq}`}
                 highlight={data.pending.outbound.readyCount > 0}
               />
               <StatCard
                 label="피킹 작업 중"
                 value={`${formatNumber(data.pending.outbound.pickingCount)}건`}
-                to="/outbounds"
+                to={`/outbounds?${wq}`}
               />
               <StatCard
                 label="배송 중"
                 value={`${formatNumber(data.pending.outbound.shippedCount)}건`}
-                to="/outbounds?status=SHIPPED"
+                to={`/outbounds?status=SHIPPED&${wq}`}
               />
             </div>
           </section>
@@ -131,12 +136,12 @@ export function WarehouseHome() {
 
           <section className="space-y-3">
             <SectionTitle>재고 주의</SectionTitle>
-            <div className="grid gap-4 xl:grid-cols-3">
+            <div className="grid items-start gap-4 xl:grid-cols-3">
               <Card className="h-full xl:col-span-2">
                 <CardHeader>
-                  <CardTitle className="text-sm">
+                  <CardTitle className="text-base">
                     <Link
-                      to="/inventory?tab=low-stock"
+                      to={`/inventory?tab=low-stock&${wq}`}
                       className="hover:underline"
                     >
                       부족 재고 SKU{" "}
@@ -185,7 +190,7 @@ export function WarehouseHome() {
                 label="유통기한 임박 로트"
                 value={`${formatNumber(data.inventory.expiringLotCount)}개`}
                 hint="30일 이내"
-                to="/inventory"
+                to={`/inventory?tab=by-lot&expiringBefore=${expiringBefore}&${wq}`}
                 highlight={data.inventory.expiringLotCount > 0}
               />
             </div>

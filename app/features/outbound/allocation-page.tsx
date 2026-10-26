@@ -234,7 +234,7 @@ function AllocationTable({
           <SortableHead field="allocatedAt" sort={sort} onSort={onSort}>
             할당일시
           </SortableHead>
-          <TableHead />
+          <TableHead className="w-px" />
         </TableRow>
       </TableHeader>
       <TableBody>
