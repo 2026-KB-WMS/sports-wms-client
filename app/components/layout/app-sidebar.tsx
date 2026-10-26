@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router"
+import { Link, useLocation, useNavigate } from "react-router"
 import {
   LayoutDashboard,
   Package,
@@ -171,6 +171,12 @@ export function AppSidebar() {
   const navigate = useNavigate()
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [closedGroups, setClosedGroups] = useState<string[]>([])
+  const { pathname } = useLocation()
+  // 홈("/")은 정확히 일치할 때만, 나머지는 상세 화면(/warehouses/1)까지 같은 메뉴로 본다.
+  const isCurrent = (href: string) =>
+    href === "/"
+      ? pathname === "/"
+      : pathname === href || pathname.startsWith(`${href}/`)
   const { state } = useSidebar()
   const visibleGroups = navGroups
     .map((g) => ({
@@ -231,6 +237,8 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.label}>
                       <SidebarMenuButton
                         tooltip={item.label}
+                        isActive={isCurrent(item.href)}
+                        className="data-active:bg-foreground/10"
                         render={
                           <Link to={item.href}>
                             <item.icon />
