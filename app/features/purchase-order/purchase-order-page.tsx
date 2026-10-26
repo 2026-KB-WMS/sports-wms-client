@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { useInitialParam } from "~/lib/use-initial-param"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type {
   PurchaseOrderListItem,
@@ -39,7 +40,11 @@ const STATUS_OPTIONS: { value: PurchaseOrderStatus; label: string }[] = [
 
 export function PurchaseOrderPage() {
   const { role } = useCurrentUser()
-  const [status, setStatus] = useState("")
+  const initialStatus = useInitialParam(
+    "status",
+    STATUS_OPTIONS.map((o) => o.value)
+  )
+  const [status, setStatus] = useState(initialStatus)
   const [warehouseId, setWarehouseId] = useState("")
   const [supplierId, setSupplierId] = useState("")
   const [keyword, setKeyword] = useState("")

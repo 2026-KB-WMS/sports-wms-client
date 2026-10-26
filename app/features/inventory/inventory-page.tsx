@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
+import { useInitialParam } from "~/lib/use-initial-param"
 import { getErrorMessage } from "~/lib/api/error-messages"
 import { getRoleLabel, useCurrentUser } from "~/lib/current-user"
 import { useCategories } from "~/features/product/hooks"
@@ -64,7 +65,11 @@ const tabs: { key: Tab; label: string }[] = [
 ]
 
 export function InventoryPage() {
-  const [tab, setTab] = useState<Tab>("by-section")
+  const initialTab = useInitialParam(
+    "tab",
+    tabs.map((t) => t.key)
+  )
+  const [tab, setTab] = useState<Tab>((initialTab || "by-section") as Tab)
   const [keyword, setKeyword] = useState("")
   const [adjustTarget, setAdjustTarget] = useState<InventoryLotView | null>(
     null
