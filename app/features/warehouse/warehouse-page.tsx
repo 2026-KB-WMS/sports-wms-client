@@ -20,9 +20,10 @@ import {
 import { getErrorMessage } from "~/lib/api/error-messages"
 import type { Warehouse } from "~/lib/api/warehouse"
 
+import { useCurrentUser } from "~/lib/current-user"
 import { getPhoneError } from "~/lib/phone"
 
-import { useCreateWarehouse, useWarehouses } from "./hooks"
+import { useCreateWarehouse, useMyWarehouses, useWarehouses } from "./hooks"
 
 type ActiveFilter = "" | "true" | "false"
 
@@ -31,51 +32,63 @@ export function WarehousePage() {
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("")
   const [showForm, setShowForm] = useState(false)
 
-  const warehousesQuery = useWarehouses({
-    keyword: keyword || undefined,
-    isActive: activeFilter === "" ? undefined : activeFilter === "true",
-  })
+  // 전체 창고 목록 API는 본사 전용이라 창고 관리자는 담당 창고 목록을 쓴다.
+  const { role } = useCurrentUser()
+  const isManager = role === "WAREHOUSE_MANAGER"
+  const allQuery = useWarehouses(
+    {
+      keyword: keyword || undefined,
+      isActive: activeFilter === "" ? undefined : activeFilter === "true",
+    },
+    !isManager
+  )
+  const myQuery = useMyWarehouses(isManager)
+  const warehousesQuery = isManager ? myQuery : allQuery
   const warehouses = warehousesQuery.data?.items ?? []
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
-      <div className="flex justify-end">
-        <Button size="sm" onClick={() => setShowForm((v) => !v)}>
-          <Plus data-icon="inline-start" />
-          창고 등록
-        </Button>
-      </div>
+      {!isManager && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => setShowForm((v) => !v)}>
+            <Plus data-icon="inline-start" />
+            창고 등록
+          </Button>
+        </div>
+      )}
 
       {showForm && <WarehouseCreateForm onClose={() => setShowForm(false)} />}
 
       <Card>
         <CardHeader>
-          <CardTitle>창고 목록</CardTitle>
-          <div className="mt-3 flex flex-wrap items-end gap-4">
-            <div className="w-56">
-              <Label htmlFor="warehouse-keyword">검색어</Label>
-              <Input
-                id="warehouse-keyword"
-                placeholder="창고명·코드·주소 검색"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-              />
+          <CardTitle>{isManager ? "담당 창고" : "창고 목록"}</CardTitle>
+          {!isManager && (
+            <div className="mt-3 flex flex-wrap items-end gap-4">
+              <div className="w-56">
+                <Label htmlFor="warehouse-keyword">검색어</Label>
+                <Input
+                  id="warehouse-keyword"
+                  placeholder="창고명·코드·주소 검색"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
+              </div>
+              <div className="w-32">
+                <Label htmlFor="warehouse-active">상태</Label>
+                <Select
+                  id="warehouse-active"
+                  value={activeFilter}
+                  onChange={(e) =>
+                    setActiveFilter(e.target.value as ActiveFilter)
+                  }
+                >
+                  <option value="">전체</option>
+                  <option value="true">사용</option>
+                  <option value="false">미사용</option>
+                </Select>
+              </div>
             </div>
-            <div className="w-32">
-              <Label htmlFor="warehouse-active">상태</Label>
-              <Select
-                id="warehouse-active"
-                value={activeFilter}
-                onChange={(e) =>
-                  setActiveFilter(e.target.value as ActiveFilter)
-                }
-              >
-                <option value="">전체</option>
-                <option value="true">사용</option>
-                <option value="false">미사용</option>
-              </Select>
-            </div>
-          </div>
+          )}
         </CardHeader>
         <CardContent>
           {warehousesQuery.isLoading && (

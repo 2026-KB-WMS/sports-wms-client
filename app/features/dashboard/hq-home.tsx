@@ -54,7 +54,7 @@ function FlowCard({
     <Link to={to} className="block h-full">
       <Card className="h-full transition-colors hover:bg-accent/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardTitle className="text-base font-medium text-muted-foreground">
             {label}
           </CardTitle>
         </CardHeader>
@@ -412,7 +412,7 @@ function TrendsSection() {
           </Card>
           <Card className="h-full">
             <CardHeader>
-              <CardTitle className="text-sm">이번 달 출고 상위 SKU</CardTitle>
+              <CardTitle className="text-base">이번 달 출고 상위 SKU</CardTitle>
             </CardHeader>
             <CardContent>
               {data.topOutboundSkus.length === 0 ? (

@@ -198,7 +198,7 @@ function UserList() {
                     상태
                   </SortableHead>
                   <TableHead>최근 로그인</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
+                  <TableHead className="w-px text-right">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

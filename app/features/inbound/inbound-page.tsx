@@ -38,7 +38,7 @@ export function InboundPage() {
     STATUS_OPTIONS.map((o) => o.value)
   )
   const [status, setStatus] = useState(initialStatus)
-  const [warehouseId, setWarehouseId] = useState("")
+  const [warehouseId, setWarehouseId] = useState(useInitialParam("warehouseId"))
   const [keyword, setKeyword] = useState("")
   const [arrivedFrom, setArrivedFrom] = useState("")
   const [arrivedTo, setArrivedTo] = useState("")

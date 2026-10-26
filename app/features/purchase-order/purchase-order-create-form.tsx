@@ -251,7 +251,7 @@ function LineEditor({
               <TableHead className="text-right">매입가</TableHead>
               <TableHead className="w-32">수량</TableHead>
               <TableHead className="text-right">금액</TableHead>
-              <TableHead />
+              <TableHead className="w-px" />
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -71,6 +71,12 @@ export function InventoryPage() {
   )
   const [tab, setTab] = useState<Tab>((initialTab || "by-section") as Tab)
   const [keyword, setKeyword] = useState("")
+  // 대시보드에서 넘어온 창고·유통기한 조건. 재고 부족·로트별 탭에 적용한다.
+  const [warehouseId, setWarehouseId] = useState(useInitialParam("warehouseId"))
+  const [expiringBefore, setExpiringBefore] = useState(
+    useInitialParam("expiringBefore")
+  )
+  const warehouses = useSelectableWarehouses()
   const [adjustTarget, setAdjustTarget] = useState<InventoryLotView | null>(
     null
   )
@@ -78,13 +84,20 @@ export function InventoryPage() {
   const keywordFilter = { keyword: keyword || undefined }
   const summaryPaging = usePaging(JSON.stringify(keywordFilter))
   const lotsPaging = usePaging(JSON.stringify(keywordFilter))
-  const byLotPaging = usePaging("")
+  const byLotPaging = usePaging(`${warehouseId}|${expiringBefore}`)
   const summaryQuery = useInventories({
     ...keywordFilter,
     ...summaryPaging.params,
   })
-  const lowStockQuery = useLowStock(keywordFilter)
-  const byLotQuery = useInventoriesByLot(byLotPaging.params)
+  const lowStockQuery = useLowStock({
+    ...keywordFilter,
+    warehouseId: warehouseId ? Number(warehouseId) : undefined,
+  })
+  const byLotQuery = useInventoriesByLot({
+    ...byLotPaging.params,
+    warehouseId: warehouseId ? Number(warehouseId) : undefined,
+    expiringBefore: expiringBefore || undefined,
+  })
   const lotsQuery = useLots({ ...keywordFilter, ...lotsPaging.params })
 
   return (
@@ -100,8 +113,34 @@ export function InventoryPage() {
             {t.label}
           </Button>
         ))}
+        {(tab === "low-stock" || tab === "by-lot") && (
+          <div className="ml-auto flex items-center gap-2">
+            {tab === "by-lot" && expiringBefore && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setExpiringBefore("")}
+              >
+                유통기한 {expiringBefore}까지 ✕
+              </Button>
+            )}
+            <div className="w-44">
+              <Select
+                value={warehouseId}
+                onChange={(e) => setWarehouseId(e.target.value)}
+              >
+                <option value="">전체 창고</option>
+                {warehouses.map((w) => (
+                  <option key={w.warehouseId} value={w.warehouseId}>
+                    {w.warehouseName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        )}
         {tab !== "by-section" && tab !== "by-lot" && (
-          <div className="ml-auto w-56">
+          <div className={tab === "low-stock" ? "w-56" : "ml-auto w-56"}>
             <Input
               placeholder="SKU 검색"
               value={keyword}
@@ -192,9 +231,12 @@ function queryState({
 function BySectionPanel() {
   const warehouses = useSelectableWarehouses()
   const categories = useCategories()
+  // 창고 상세의 구역 링크에서 넘어온 창고·구역을 초기 필터로 쓴다.
+  const initialWarehouseId = useInitialParam("warehouseId")
+  const initialSectionId = useInitialParam("sectionId")
   const [draft, setDraft] = useState({
-    warehouseId: "",
-    sectionId: "",
+    warehouseId: initialWarehouseId,
+    sectionId: initialWarehouseId ? initialSectionId : "",
     categoryId: "",
     keyword: "",
   })
@@ -695,7 +737,7 @@ function ByLotTable({
             <SortableHead field="lastCountedAt" sort={sort} onSort={onSort}>
               최근 실사
             </SortableHead>
-            <TableHead />
+            <TableHead className="w-px" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -830,7 +872,7 @@ function LotsTable({
             >
               단가
             </SortableHead>
-            {canChange && <TableHead />}
+            {canChange && <TableHead className="w-px" />}
           </TableRow>
         </TableHeader>
         <TableBody>

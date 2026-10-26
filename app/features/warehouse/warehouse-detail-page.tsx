@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Plus, X } from "lucide-react"
 
+import { LinkRow } from "~/components/common/link-row"
 import { ConfirmDialog } from "~/components/common/confirm-dialog"
 import { StatusBadge } from "~/components/common/status-badge"
 import { Button } from "~/components/ui/button"
@@ -212,6 +213,11 @@ export function WarehouseDetailPage({ warehouseId }: { warehouseId: number }) {
   )
 }
 
+/** 구역을 누르면 구역별 재고 화면이 그 창고·구역으로 걸러진 채 열린다. */
+function sectionStockPath(section: WarehouseSection) {
+  return `/inventory?tab=by-section&warehouseId=${section.warehouseId}&sectionId=${section.sectionId}`
+}
+
 function SectionTable({
   sections,
   canEdit,
@@ -266,13 +272,13 @@ function SectionTable({
             <TableHead className="text-right">사용중</TableHead>
             <TableHead className="text-right">가용</TableHead>
             <TableHead>상태</TableHead>
-            {canEdit && <TableHead />}
+            {canEdit && <TableHead className="w-px" />}
           </TableRow>
         </TableHeader>
         <TableBody>
           {sections.map((section) => (
-            <TableRow key={section.sectionId}>
-              <TableCell className="font-mono text-xs text-muted-foreground">
+            <LinkRow key={section.sectionId} to={sectionStockPath(section)}>
+              <TableCell className="font-mono text-xs">
                 {section.sectionCode}
               </TableCell>
               <TableCell className="font-medium">
@@ -299,7 +305,11 @@ function SectionTable({
                 />
               </TableCell>
               {canEdit && (
-                <TableCell className="space-x-1 text-right">
+                <TableCell
+                  className="space-x-1 text-right"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <Button
                     variant="outline"
                     size="sm"
@@ -328,7 +338,7 @@ function SectionTable({
                   </Button>
                 </TableCell>
               )}
-            </TableRow>
+            </LinkRow>
           ))}
         </TableBody>
       </Table>

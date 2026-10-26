@@ -110,7 +110,7 @@ export function BrandPanel({
               <TableHead>브랜드명</TableHead>
               <TableHead>설명</TableHead>
               <TableHead>상태</TableHead>
-              {canEdit && <TableHead />}
+              {canEdit && <TableHead className="w-px" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -313,7 +313,7 @@ export function CategoryPanel({
               <TableHead>상위 카테고리</TableHead>
               <TableHead className="text-right">정렬</TableHead>
               <TableHead>상태</TableHead>
-              {canEdit && <TableHead />}
+              {canEdit && <TableHead className="w-px" />}
             </TableRow>
           </TableHeader>
           <TableBody>
