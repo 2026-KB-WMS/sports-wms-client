@@ -16,7 +16,7 @@ export default function Home() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <AppHeader section="개요" title="전체 현황" />
+        <AppHeader section="개요" />
         {role === "HQ_ADMIN" ? <HqHome /> : <WarehouseHome />}
       </SidebarInset>
     </SidebarProvider>

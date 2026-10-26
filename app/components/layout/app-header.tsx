@@ -5,7 +5,8 @@ import { SidebarTrigger, useSidebar } from "~/components/ui/sidebar"
 
 interface AppHeaderProps {
   section: string
-  title: string
+  /** 비우면 제목 줄을 그리지 않는다(화면 안에 자체 제목이 있는 홈). */
+  title?: string
   description?: string
 }
 
@@ -43,12 +44,14 @@ export function AppHeader({ section, title, description }: AppHeaderProps) {
           </div>
         </div>
       </header>
-      <div className="border-b bg-background px-4 py-4 sm:px-6">
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        )}
-      </div>
+      {title && (
+        <div className="border-b bg-background px-4 py-4 sm:px-6">
+          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+          {description && (
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          )}
+        </div>
+      )}
     </>
   )
 }

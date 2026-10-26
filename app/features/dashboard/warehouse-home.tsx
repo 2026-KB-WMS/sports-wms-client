@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router"
 
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Select } from "~/components/ui/select"
@@ -66,13 +67,13 @@ export function WarehouseHome() {
               <StatCard
                 label="검수 전 (도착)"
                 value={`${formatNumber(data.pending.inbound.arrivedCount)}건`}
-                to="/inbounds"
+                to="/inbounds?status=ARRIVED"
                 highlight={data.pending.inbound.arrivedCount > 0}
               />
               <StatCard
                 label="검수 중"
                 value={`${formatNumber(data.pending.inbound.inspectingCount)}건`}
-                to="/inbounds"
+                to="/inbounds?status=INSPECTING"
               />
             </div>
           </section>
@@ -83,7 +84,7 @@ export function WarehouseHome() {
               <StatCard
                 label="피킹 전 (출고 준비)"
                 value={`${formatNumber(data.pending.outbound.readyCount)}건`}
-                to="/outbounds"
+                to="/outbounds?status=READY"
                 highlight={data.pending.outbound.readyCount > 0}
               />
               <StatCard
@@ -94,7 +95,7 @@ export function WarehouseHome() {
               <StatCard
                 label="배송 중"
                 value={`${formatNumber(data.pending.outbound.shippedCount)}건`}
-                to="/outbounds"
+                to="/outbounds?status=SHIPPED"
               />
             </div>
           </section>
@@ -131,12 +132,17 @@ export function WarehouseHome() {
           <section className="space-y-3">
             <SectionTitle>재고 주의</SectionTitle>
             <div className="grid gap-4 xl:grid-cols-3">
-              <Card className="xl:col-span-2">
+              <Card className="h-full xl:col-span-2">
                 <CardHeader>
                   <CardTitle className="text-sm">
-                    부족 재고 SKU{" "}
-                    {formatNumber(data.inventory.lowStockSkuCount)}개 (부족 폭
-                    상위 5개)
+                    <Link
+                      to="/inventory?tab=low-stock"
+                      className="hover:underline"
+                    >
+                      부족 재고 SKU{" "}
+                      {formatNumber(data.inventory.lowStockSkuCount)}개 (부족 폭
+                      상위 5개)
+                    </Link>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

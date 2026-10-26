@@ -15,7 +15,7 @@ export function formatRate(rate: number | null) {
 }
 
 export function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-sm font-semibold">{children}</h2>
+  return <h2 className="text-base font-semibold">{children}</h2>
 }
 
 interface StatCardProps {
@@ -30,7 +30,9 @@ interface StatCardProps {
 
 export function StatCard({ label, value, hint, to, highlight }: StatCardProps) {
   const card = (
-    <Card className={cn(to && "transition-colors hover:bg-accent/50")}>
+    <Card
+      className={cn("h-full", to && "transition-colors hover:bg-accent/50")}
+    >
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
@@ -44,7 +46,13 @@ export function StatCard({ label, value, hint, to, highlight }: StatCardProps) {
       </CardContent>
     </Card>
   )
-  return to ? <Link to={to}>{card}</Link> : card
+  return to ? (
+    <Link to={to} className="block h-full">
+      {card}
+    </Link>
+  ) : (
+    card
+  )
 }
 
 export function QueryNotice({

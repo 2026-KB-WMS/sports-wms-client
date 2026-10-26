@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
 import * as dashboardApi from "~/lib/api/dashboard"
 
@@ -7,10 +7,13 @@ import * as dashboardApi from "~/lib/api/dashboard"
  * 읽기 전용이라 쓰기 훅은 없다.
  */
 
-export function useHqSummary() {
+/** month는 `YYYY-MM`. 비우면 서버가 현재 달로 집계한다. */
+export function useHqSummary(month: string) {
   return useQuery({
-    queryKey: ["dashboard", "hq-summary"],
-    queryFn: () => dashboardApi.getHqSummary(),
+    queryKey: ["dashboard", "hq-summary", month],
+    queryFn: () => dashboardApi.getHqSummary({ month: month || undefined }),
+    // 달을 바꿀 때 화면 전체가 로딩 문구로 바뀌지 않도록 이전 데이터를 유지한다.
+    placeholderData: keepPreviousData,
   })
 }
 

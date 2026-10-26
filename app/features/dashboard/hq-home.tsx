@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "react-router"
 import {
   Bar,
   BarChart,
@@ -12,6 +13,7 @@ import {
 
 import { StatusBadge } from "~/components/common/status-badge"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { Input } from "~/components/ui/input"
 import { Select } from "~/components/ui/select"
 import {
   Table,
@@ -22,7 +24,7 @@ import {
   TableRow,
 } from "~/components/ui/table"
 import { useSelectableWarehouses } from "~/features/purchase-order/hooks"
-import type { FlowSummary } from "~/lib/api/dashboard"
+import type { CountQuantity } from "~/lib/api/dashboard"
 
 import {
   QueryNotice,
@@ -33,15 +35,108 @@ import {
 } from "./dashboard-parts"
 import { useHqSummary, useHqTrends } from "./hooks"
 
-/** 전월 대비 증감을 "전월 9,100 (+700)" 형태로 보여 준다. */
-function flowHint(flow: FlowSummary) {
-  const prev = flow.previousMonthCompleted.quantity
-  const diff = flow.completed.quantity - prev
-  return `전월 ${formatNumber(prev)} (${diff >= 0 ? "+" : ""}${formatNumber(diff)})`
+/** 건수와 수량을 나란한 두 칸으로 보여 주는 입고·출고 카드. */
+function FlowCard({
+  label,
+  flow,
+  previous,
+  hint,
+  to,
+}: {
+  label: string
+  flow: CountQuantity
+  /** 있으면 건수·수량 아래에 전월 값과 증감을 보여 준다(완료 카드만). */
+  previous?: CountQuantity
+  hint?: string
+  to: string
+}) {
+  return (
+    <Link to={to} className="block h-full">
+      <Card className="h-full transition-colors hover:bg-accent/50">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {label}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-muted-foreground">건수</p>
+              <p className="text-2xl font-bold">{formatNumber(flow.count)}건</p>
+              {previous && (
+                <PreviousDiff
+                  current={flow.count}
+                  previous={previous.count}
+                  unit="건"
+                />
+              )}
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">수량</p>
+              <p className="text-2xl font-bold">
+                {formatNumber(flow.quantity)}개
+              </p>
+              {previous && (
+                <PreviousDiff
+                  current={flow.quantity}
+                  previous={previous.quantity}
+                  unit="개"
+                />
+              )}
+            </div>
+          </div>
+          {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
+/** 전월 대비 증감을 "전월 19건 (+2)"로 보여 준다. 늘면 초록, 줄면 빨강, 같으면 기본색이다. */
+function PreviousDiff({
+  current,
+  previous,
+  unit,
+}: {
+  current: number
+  previous: number
+  unit: string
+}) {
+  const diff = current - previous
+  const color =
+    diff > 0
+      ? "text-emerald-600 dark:text-emerald-400"
+      : diff < 0
+        ? "text-red-600 dark:text-red-400"
+        : ""
+  return (
+    <p className="mt-1 text-xs text-muted-foreground">
+      전월 {formatNumber(previous)}
+      {unit}{" "}
+      <span className={`font-medium ${color}`}>
+        ({diff > 0 ? "+" : ""}
+        {formatNumber(diff)})
+      </span>
+    </p>
+  )
+}
+
+/** "2026-10"을 "2026년 10월"로 표시한다. */
+function formatMonthTitle(month: string) {
+  const [year, mm] = month.split("-")
+  return `${year}년 ${Number(mm)}월`
+}
+
+/** 오늘이 속한 달 `YYYY-MM`. 미래 달은 고르지 못하게 하는 상한이다. */
+function currentMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 }
 
 export function HqHome() {
-  const summary = useHqSummary()
+  // 비어 있으면 현재 달. 서버가 내려준 data.month로 제목과 선택 값을 채운다.
+  const [month, setMonth] = useState("")
+  const summary = useHqSummary(month)
   const data = summary.data
 
   return (
@@ -53,25 +148,166 @@ export function HqHome() {
       />
       {data && (
         <>
+          <div className="flex flex-wrap items-center gap-8">
+            <h1 className="text-3xl font-bold">
+              {formatMonthTitle(data.month)}
+            </h1>
+            <div className="w-40">
+              <Input
+                type="month"
+                value={data.month}
+                max={currentMonth()}
+                onChange={(e) => e.target.value && setMonth(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <section className="space-y-3">
+            <SectionTitle>입고·출고</SectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <FlowCard
+                label="입고 완료"
+                flow={data.inbound.completed}
+                previous={data.inbound.previousMonthCompleted}
+                to="/inbounds"
+              />
+              <FlowCard
+                label="출고 완료"
+                flow={data.outbound.completed}
+                previous={data.outbound.previousMonthCompleted}
+                to="/outbounds"
+              />
+              <FlowCard
+                label="입고 진행중 (현재)"
+                flow={data.inbound.inProgress}
+                hint="검수 중"
+                to="/inbounds"
+              />
+              <FlowCard
+                label="출고 진행중 (현재)"
+                flow={data.outbound.inProgress}
+                hint="피킹~배송 중"
+                to="/outbounds"
+              />
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <SectionTitle>지점 발주</SectionTitle>
+            <Card size="sm">
+              <CardContent className="flex flex-wrap items-center gap-x-10 gap-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">총 발주</p>
+                  <p className="text-2xl font-bold">
+                    {formatNumber(data.storeOrders.totalCount)}건
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">완료율</p>
+                  <p className="text-2xl font-bold">
+                    {formatRate(data.storeOrders.completionRate)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-x-8 gap-y-4">
+                  {Object.entries(data.storeOrders.byStatus).map(
+                    ([status, count]) => (
+                      <div key={status} className="flex items-center gap-2.5">
+                        <StatusBadge
+                          status={status}
+                          className="text-base tracking-normal"
+                        />
+                        <span className="text-xl font-bold">
+                          {formatNumber(count)}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <section className="space-y-3">
+            <SectionTitle>창고별 현황</SectionTitle>
+            <Card>
+              <CardContent className="pt-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>창고</TableHead>
+                      <TableHead className="text-right">재고(현재)</TableHead>
+                      <TableHead className="text-right">
+                        부족 SKU(현재)
+                      </TableHead>
+                      <TableHead className="text-right">입고 완료</TableHead>
+                      <TableHead className="text-right">출고 완료</TableHead>
+                      <TableHead className="text-right">
+                        입고 진행(현재)
+                      </TableHead>
+                      <TableHead className="text-right">
+                        출고 진행(현재)
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.warehouses.map((w) => (
+                      <TableRow key={w.warehouseId}>
+                        <TableCell className="font-medium">
+                          {w.warehouseName}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.inventoryQuantity)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.lowStockSkuCount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.inbound.completedQuantity)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.outbound.completedQuantity)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.inbound.inProgressQuantity)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatNumber(w.outbound.inProgressQuantity)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </section>
+
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t pt-6">
+            <h1 className="text-xl font-bold">현재 기준</h1>
+            <p className="text-sm text-muted-foreground">
+              선택한 달과 관계없는 값입니다. 현재 시점 값과 최근 6개월
+              추이입니다.
+            </p>
+          </div>
+
           <section className="space-y-3">
             <SectionTitle>조치 대기</SectionTitle>
             <div className="grid gap-4 sm:grid-cols-3">
               <StatCard
                 label="지점 발주 승인 대기"
                 value={`${formatNumber(data.pending.storeOrderRequestedCount)}건`}
-                to="/store-orders"
+                to="/store-orders?status=REQUESTED"
                 highlight={data.pending.storeOrderRequestedCount > 0}
               />
               <StatCard
                 label="창고 발주 확정 대기"
                 value={`${formatNumber(data.pending.purchaseOrderRequestedCount)}건`}
-                to="/purchase-orders"
+                to="/purchase-orders?status=REQUESTED"
                 highlight={data.pending.purchaseOrderRequestedCount > 0}
               />
               <StatCard
                 label="창고 배정 전 승인 발주"
                 value={`${formatNumber(data.pending.unassignedApprovedStoreOrderCount)}건`}
-                to="/store-orders"
+                to="/store-orders?status=APPROVED"
                 highlight={data.pending.unassignedApprovedStoreOrderCount > 0}
               />
             </div>
@@ -89,7 +325,7 @@ export function HqHome() {
               <StatCard
                 label="부족 재고 SKU"
                 value={`${formatNumber(data.inventory.lowStockSkuCount)}개`}
-                to="/inventory"
+                to="/inventory?tab=low-stock"
                 highlight={data.inventory.lowStockSkuCount > 0}
               />
               <StatCard
@@ -111,114 +347,6 @@ export function HqHome() {
               />
             </div>
           </section>
-
-          <section className="space-y-3">
-            <SectionTitle>{data.month} 입고·출고</SectionTitle>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label="입고 완료 수량"
-                value={formatNumber(data.inbound.completed.quantity)}
-                hint={`${formatNumber(data.inbound.completed.count)}건 · ${flowHint(data.inbound)}`}
-                to="/inbounds"
-              />
-              <StatCard
-                label="입고 진행중"
-                value={formatNumber(data.inbound.inProgress.quantity)}
-                hint={`${formatNumber(data.inbound.inProgress.count)}건 (검수 중)`}
-                to="/inbounds"
-              />
-              <StatCard
-                label="출고 완료 수량"
-                value={formatNumber(data.outbound.completed.quantity)}
-                hint={`${formatNumber(data.outbound.completed.count)}건 · ${flowHint(data.outbound)}`}
-                to="/outbounds"
-              />
-              <StatCard
-                label="출고 진행중"
-                value={formatNumber(data.outbound.inProgress.quantity)}
-                hint={`${formatNumber(data.outbound.inProgress.count)}건 (피킹~배송 중)`}
-                to="/outbounds"
-              />
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <SectionTitle>{data.month} 지점 발주</SectionTitle>
-            <Card>
-              <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-6">
-                <div>
-                  <p className="text-xs text-muted-foreground">완료율</p>
-                  <p className="text-2xl font-bold">
-                    {formatRate(data.storeOrders.completionRate)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    총 {formatNumber(data.storeOrders.totalCount)}건 (취소·반려
-                    제외 기준)
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(data.storeOrders.byStatus).map(
-                    ([status, count]) => (
-                      <div key={status} className="flex items-center gap-1.5">
-                        <StatusBadge status={status} />
-                        <span className="text-sm font-medium">
-                          {formatNumber(count)}
-                        </span>
-                      </div>
-                    )
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="space-y-3">
-            <SectionTitle>창고별 현황</SectionTitle>
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>창고</TableHead>
-                      <TableHead className="text-right">재고</TableHead>
-                      <TableHead className="text-right">부족 SKU</TableHead>
-                      <TableHead className="text-right">입고 완료</TableHead>
-                      <TableHead className="text-right">입고 진행</TableHead>
-                      <TableHead className="text-right">출고 완료</TableHead>
-                      <TableHead className="text-right">출고 진행</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.warehouses.map((w) => (
-                      <TableRow key={w.warehouseId}>
-                        <TableCell className="font-medium">
-                          {w.warehouseName}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.inventoryQuantity)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.lowStockSkuCount)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.inbound.completedQuantity)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.inbound.inProgressQuantity)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.outbound.completedQuantity)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatNumber(w.outbound.inProgressQuantity)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </section>
         </>
       )}
 
@@ -236,7 +364,7 @@ function TrendsSection() {
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-8">
         <SectionTitle>월간 추이 (최근 6개월 완료 수량)</SectionTitle>
         <div className="w-48">
           <Select
@@ -259,7 +387,7 @@ function TrendsSection() {
       />
       {data && (
         <div className="grid gap-4 xl:grid-cols-3">
-          <Card className="xl:col-span-2">
+          <Card className="h-full xl:col-span-2">
             <CardContent className="h-72 pt-6">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.items}>
@@ -282,7 +410,7 @@ function TrendsSection() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="h-full">
             <CardHeader>
               <CardTitle className="text-sm">이번 달 출고 상위 SKU</CardTitle>
             </CardHeader>
@@ -292,21 +420,19 @@ function TrendsSection() {
                   이번 달 출고 완료 내역이 없습니다.
                 </p>
               ) : (
-                <ol className="space-y-2">
-                  {data.topOutboundSkus.map((sku, index) => (
+                <ul className="space-y-4">
+                  {data.topOutboundSkus.map((sku) => (
                     <li
                       key={sku.skuId}
                       className="flex items-center justify-between gap-2 text-sm"
                     >
-                      <span className="truncate">
-                        {index + 1}. {sku.skuName}
-                      </span>
+                      <span className="truncate">{sku.skuName}</span>
                       <span className="shrink-0 font-medium">
                         {formatNumber(sku.quantity)}
                       </span>
                     </li>
                   ))}
-                </ol>
+                </ul>
               )}
             </CardContent>
           </Card>
