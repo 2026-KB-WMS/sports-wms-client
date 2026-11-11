@@ -39,7 +39,12 @@ export function StatCard({ label, value, hint, to, highlight }: StatCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className={cn("text-2xl font-bold", highlight && "text-primary")}>
+        <p
+          className={cn(
+            "text-2xl font-bold whitespace-nowrap",
+            highlight && "text-primary"
+          )}
+        >
           {value}
         </p>
         {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
