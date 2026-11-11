@@ -57,10 +57,22 @@ function buildUrl(path: string, query?: QueryParams) {
 const PUBLIC_AUTH_PATHS = ["/api/v1/auth/login", "/api/v1/auth/signup"]
 
 /** 공통 요청 헤더. 로그인 토큰이 있으면 Authorization을 붙인다. */
+/**
+ * 서버 개발 로그용 화면 식별자. "/inbounds/12" -> "inbounds-detail", "/" -> "home".
+ * 숫자 ID 세그먼트는 "detail"로 바꿔 화면마다 값이 달라지지 않게 한다.
+ */
+function getScreen(): string {
+  if (typeof window === "undefined") return "ssr"
+  const segments = window.location.pathname.split("/").filter(Boolean)
+  if (segments.length === 0) return "home"
+  return segments.map((s) => (/^\d+$/.test(s) ? "detail" : s)).join("-")
+}
+
 function buildHeaders(hasBody: boolean): HeadersInit {
   const token = getToken()
   return {
     Accept: "application/json",
+    "X-Screen": getScreen(),
     ...(hasBody ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
