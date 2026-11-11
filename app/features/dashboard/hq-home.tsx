@@ -62,7 +62,9 @@ function FlowCard({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-muted-foreground">건수</p>
-              <p className="text-2xl font-bold">{formatNumber(flow.count)}건</p>
+              <p className="text-2xl font-bold whitespace-nowrap">
+                {formatNumber(flow.count)}건
+              </p>
               {previous && (
                 <PreviousDiff
                   current={flow.count}
@@ -73,7 +75,7 @@ function FlowCard({
             </div>
             <div>
               <p className="text-xs text-muted-foreground">수량</p>
-              <p className="text-2xl font-bold">
+              <p className="text-2xl font-bold whitespace-nowrap">
                 {formatNumber(flow.quantity)}개
               </p>
               {previous && (
@@ -110,7 +112,7 @@ function PreviousDiff({
         ? "text-red-600 dark:text-red-400"
         : ""
   return (
-    <p className="mt-1 text-xs text-muted-foreground">
+    <p className="mt-1 text-xs whitespace-nowrap text-muted-foreground">
       전월 {formatNumber(previous)}
       {unit}{" "}
       <span className={`font-medium ${color}`}>
@@ -198,7 +200,7 @@ export function HqHome() {
               <CardContent className="flex flex-wrap items-center gap-x-10 gap-y-4">
                 <div>
                   <p className="text-xs text-muted-foreground">총 발주</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold whitespace-nowrap">
                     {formatNumber(data.storeOrders.totalCount)}건
                   </p>
                 </div>
